@@ -60,7 +60,14 @@ export async function POST(request: NextRequest) {
             experience: {
               ...body.questionnaire.experience,
               strongPoints: sanitizeStringArray(body.questionnaire.experience?.strongPoints),
-              weakPoints: sanitizeStringArray(body.questionnaire.experience?.weakPoints)
+              weakPoints: sanitizeStringArray(body.questionnaire.experience?.weakPoints),
+              currentBodyWeight: body.questionnaire.experience?.currentBodyWeight || undefined,
+              currentLifts: body.questionnaire.experience?.currentLifts ? {
+                squat: body.questionnaire.experience.currentLifts.squat || undefined,
+                bench: body.questionnaire.experience.currentLifts.bench || undefined,
+                deadlift: body.questionnaire.experience.currentLifts.deadlift || undefined,
+                overheadPress: body.questionnaire.experience.currentLifts.overheadPress || undefined
+              } : undefined
             },
             equipment: {
               ...body.questionnaire.equipment,

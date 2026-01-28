@@ -310,14 +310,14 @@ ${
 ### Performance Context
 ${
   questionnaire.experience.currentLifts &&
-  (questionnaire.experience.currentLifts.squat ||
-    questionnaire.experience.currentLifts.bench ||
-    questionnaire.experience.currentLifts.deadlift)
+  ((questionnaire.experience.currentLifts.squat ?? 0) > 0 ||
+    (questionnaire.experience.currentLifts.bench ?? 0) > 0 ||
+    (questionnaire.experience.currentLifts.deadlift ?? 0) > 0)
     ? `**Current working weights provided:**
-- Squat: ${questionnaire.experience.currentLifts.squat || 'N/A'}kg
-- Bench Press: ${questionnaire.experience.currentLifts.bench || 'N/A'}kg
-- Deadlift: ${questionnaire.experience.currentLifts.deadlift || 'N/A'}kg
-- Overhead Press: ${questionnaire.experience.currentLifts.overheadPress || 'N/A'}kg
+- Squat: ${(questionnaire.experience.currentLifts.squat ?? 0) > 0 ? questionnaire.experience.currentLifts.squat + 'kg' : 'N/A'}
+- Bench Press: ${(questionnaire.experience.currentLifts.bench ?? 0) > 0 ? questionnaire.experience.currentLifts.bench + 'kg' : 'N/A'}
+- Deadlift: ${(questionnaire.experience.currentLifts.deadlift ?? 0) > 0 ? questionnaire.experience.currentLifts.deadlift + 'kg' : 'N/A'}
+- Overhead Press: ${(questionnaire.experience.currentLifts.overheadPress ?? 0) > 0 ? questionnaire.experience.currentLifts.overheadPress + 'kg' : 'N/A'}
 
 **IMPORTANT**: Use these numbers to set realistic starting weights and progression targets. For example, if their bench is 70kg, start the program at 60-62.5kg (85-90%) and show specific week-by-week progression back to and beyond 70kg.`
     : 'No current lifts provided - use general progression guidance based on experience level.'
@@ -347,7 +347,7 @@ ${cfosRefs}
     questionnaire.nutrition.nutritionApproach,
     questionnaire.nutrition.proteinIntake,
     questionnaire.availability.daysPerWeek,
-    questionnaire.experience.currentBodyWeight
+    questionnaire.experience.currentBodyWeight ?? undefined
   );
   const supplementRecs = recommendSupplements(
     questionnaire.goals,
@@ -432,10 +432,14 @@ ${programDesignToPrompt(programDesign)}
 - Training years: ${questionnaire.experience.trainingYears}
 - Level: ${questionnaire.experience.currentLevel}
 - Training consistency: ${questionnaire.experience.trainingConsistency.replace('_', ' ')}
-- Current body weight: ${questionnaire.experience.currentBodyWeight ? `${questionnaire.experience.currentBodyWeight}kg` : 'Not specified'}
+- Current body weight: ${(questionnaire.experience.currentBodyWeight ?? 0) > 0 ? `${questionnaire.experience.currentBodyWeight}kg` : 'Not specified'}
 - Current lifts: ${
-  questionnaire.experience.currentLifts
-    ? `Squat: ${questionnaire.experience.currentLifts.squat || 'N/A'}kg, Bench: ${questionnaire.experience.currentLifts.bench || 'N/A'}kg, Deadlift: ${questionnaire.experience.currentLifts.deadlift || 'N/A'}kg, OHP: ${questionnaire.experience.currentLifts.overheadPress || 'N/A'}kg`
+  questionnaire.experience.currentLifts &&
+  ((questionnaire.experience.currentLifts.squat ?? 0) > 0 ||
+    (questionnaire.experience.currentLifts.bench ?? 0) > 0 ||
+    (questionnaire.experience.currentLifts.deadlift ?? 0) > 0 ||
+    (questionnaire.experience.currentLifts.overheadPress ?? 0) > 0)
+    ? `Squat: ${(questionnaire.experience.currentLifts.squat ?? 0) > 0 ? questionnaire.experience.currentLifts.squat + 'kg' : 'N/A'}, Bench: ${(questionnaire.experience.currentLifts.bench ?? 0) > 0 ? questionnaire.experience.currentLifts.bench + 'kg' : 'N/A'}, Deadlift: ${(questionnaire.experience.currentLifts.deadlift ?? 0) > 0 ? questionnaire.experience.currentLifts.deadlift + 'kg' : 'N/A'}, OHP: ${(questionnaire.experience.currentLifts.overheadPress ?? 0) > 0 ? questionnaire.experience.currentLifts.overheadPress + 'kg' : 'N/A'}`
     : 'Not specified'
 }
 - Recent training: ${questionnaire.experience.recentTraining || 'Not specified'}

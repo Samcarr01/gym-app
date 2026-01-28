@@ -43,12 +43,12 @@ export const ExperienceSectionSchema = z.object({
     'inconsistent', // Frequent breaks
     'returning' // Long break, rebuilding
   ]).default('mostly_consistent'),
-  currentBodyWeight: z.number().min(30).max(300).optional(), // kg
+  currentBodyWeight: z.number().min(30).max(300).nullable().optional(), // kg
   currentLifts: z.object({
-    squat: z.number().optional(),
-    bench: z.number().optional(),
-    deadlift: z.number().optional(),
-    overheadPress: z.number().optional()
+    squat: z.number().nullable().optional(),
+    bench: z.number().nullable().optional(),
+    deadlift: z.number().nullable().optional(),
+    overheadPress: z.number().nullable().optional()
   }).optional()
 });
 
