@@ -89,13 +89,26 @@ PERSONALIZATION MEANS:
   - Advanced: "Block periodization: 4 weeks hypertrophy emphasis, 3 weeks strength, monitor HRV for autoregulation"
 
 - **nutritionNotes**: Create an integrated nutrition strategy that directly supports the training plan:
-  - **MUST reference the specific training/rest day split** (e.g., "Your 4 training days need X calories, 3 rest days need Y")
-  - **MUST provide concrete macronutrient targets** - not vague ratios (e.g., "150g protein/day" not just "2g/kg")
-  - **MUST include 2-3 specific meal examples** based on their dietary restrictions and preferences
-  - **MUST include meal timing** specific to their training schedule (morning/afternoon/evening/flexible)
-  - **MUST acknowledge current supplement use** and recommend evidence-based additions
-  - **MUST explain WHY** the nutrition strategy matches their goal
-  - **YOU WILL RECEIVE PRE-COMPUTED NUTRITION DATA BELOW - INTEGRATE IT, DON'T IGNORE IT**
+
+  **REQUIRED STRUCTURE - MUST FOLLOW THIS FORMAT:**
+
+  "Your [X] training days require [specific calories]. Your [Y] rest days require [specific calories].
+  Total daily protein: [specific grams, NOT ratios].
+
+  Sample Training Day Meals:
+  - Breakfast ([time]): [specific meal] - [protein amount]
+  - Lunch ([time]): [specific meal] - [protein amount]
+  - Pre-workout ([time]): [specific snack] - [protein amount]
+  - Post-workout ([time]): [specific meal] - [protein amount]
+  - Dinner ([time]): [specific meal] - [protein amount]
+
+  Sample Rest Day: [adjust portions/carbs]
+
+  Supplements: [acknowledge what they use + recommend additions]
+
+  Avoid: [their dietary restrictions]"
+
+  **YOU WILL RECEIVE PRE-COMPUTED NUTRITION DATA BELOW - INTEGRATE IT, DON'T IGNORE IT**
 
 - **recoveryNotes**: Personalized to sleep/stress data:
   - Poor sleep: "Emphasize active recovery, limit volume to lower end of range, prioritize sleep hygiene over training volume"
@@ -103,6 +116,15 @@ PERSONALIZATION MEANS:
   - Good recovery: "Can handle higher frequency, add optional conditioning 1-2x/week if desired"
 
 ## Exercise Selection Requirements
+
+**BANNED GENERIC PHRASES - DO NOT USE:**
+- ❌ "Core lift selected to match your goals and targets"
+- ❌ "Accessory work to round out the session"
+- ❌ "Included to directly address your stated targets"
+- ❌ "Use a controlled tempo and focus on form"
+- ❌ Any other generic template text
+
+**IF YOU USE THESE PHRASES, YOU HAVE FAILED THE TASK.**
 
 EVERY exercise must include:
 1. **intent**: What muscle/movement pattern it targets

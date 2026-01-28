@@ -4,6 +4,7 @@ import { useFormContext } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { QuestionnaireData } from '@/lib/types';
 
@@ -14,33 +15,38 @@ export function PreferencesStep() {
     <Card>
       <CardHeader>
         <CardTitle>Training Preferences</CardTitle>
-        <CardDescription>What do you enjoy and want to focus on?</CardDescription>
+        <CardDescription>Tell us what you enjoy so we can keep you motivated</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Favorite Exercises */}
         <div className="space-y-2">
-          <Label htmlFor="favouriteExercises">Favourite Exercises (Optional)</Label>
-          <Input
+          <Label htmlFor="favouriteExercises">Favorite Exercises (Optional)</Label>
+          <Textarea
             id="favouriteExercises"
-            placeholder="e.g., Bench press, deadlifts, pull-ups"
+            placeholder="Enter each exercise on a new line:&#10;Farmers carries&#10;Pull-ups&#10;Deadlifts"
+            rows={3}
             {...register('preferences.favouriteExercises.0')}
           />
           <p className="text-xs text-muted-foreground">
-            Exercises you enjoy and want to include
+            List exercises you love - we'll include them in your program. One per line or comma-separated.
           </p>
         </div>
 
+        {/* Disliked Exercises */}
         <div className="space-y-2">
-          <Label htmlFor="dislikedExercises">Disliked Exercises (Optional)</Label>
-          <Input
+          <Label htmlFor="dislikedExercises">Exercises to Avoid (Optional)</Label>
+          <Textarea
             id="dislikedExercises"
-            placeholder="e.g., Burpees, running, leg extensions"
+            placeholder="Enter each exercise on a new line:&#10;Burpees&#10;Running&#10;Leg extensions"
+            rows={3}
             {...register('preferences.dislikedExercises.0')}
           />
           <p className="text-xs text-muted-foreground">
-            Exercises you'd prefer to avoid
+            Exercises you'd prefer not to do - we'll avoid them
           </p>
         </div>
 
+        {/* Preferred Split */}
         <div className="space-y-2">
           <Label htmlFor="preferredSplit">Preferred Training Split (Optional)</Label>
           <Select
@@ -48,28 +54,30 @@ export function PreferencesStep() {
             {...register('preferences.preferredSplit', {
               setValueAs: (value) => (value === '' ? null : value)
             })}
-            placeholder="Select a split or leave blank for AI to decide"
           >
-            <option value="">No preference</option>
-            <option value="full_body">Full Body</option>
-            <option value="upper_lower">Upper/Lower</option>
-            <option value="push_pull_legs">Push/Pull/Legs</option>
-            <option value="bro_split">Bro Split</option>
-            <option value="custom">Custom</option>
+            <option value="">No preference - Let AI decide based on my goals</option>
+            <option value="full_body">Full Body - Train everything each session</option>
+            <option value="upper_lower">Upper/Lower - Alternate upper and lower body</option>
+            <option value="push_pull_legs">Push/Pull/Legs - 3-way split</option>
+            <option value="bro_split">Bro Split - One muscle group per day</option>
+            <option value="custom">Custom - I have a specific structure in mind</option>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            If unsure, leave as "No preference" for optimal recommendation
+          </p>
         </div>
 
+        {/* Cardio Preference */}
         <div className="space-y-2">
-          <Label htmlFor="cardioPreference">Cardio Preference *</Label>
+          <Label htmlFor="cardioPreference">How much cardio do you want? *</Label>
           <Select
             id="cardioPreference"
             {...register('preferences.cardioPreference')}
-            placeholder="Select cardio preference"
           >
-            <option value="none">None</option>
-            <option value="minimal">Minimal (warm-up only)</option>
-            <option value="moderate">Moderate (1-2 sessions/week)</option>
-            <option value="extensive">Extensive (3+ sessions/week)</option>
+            <option value="none">None - Strength training only</option>
+            <option value="minimal">Minimal - Just warm-up cardio</option>
+            <option value="moderate">Moderate - 1-2 cardio sessions per week</option>
+            <option value="extensive">Extensive - 3+ cardio sessions per week</option>
           </Select>
           {errors.preferences?.cardioPreference && (
             <p className="text-sm text-destructive">{errors.preferences.cardioPreference.message}</p>
