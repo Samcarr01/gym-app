@@ -2,6 +2,87 @@ import OpenAI from 'openai';
 import { QuestionnaireData, GeneratedPlan, GeneratedPlanSchema } from '@/lib/types';
 import { buildPrompt } from '@/lib/prompts';
 
+const PLAN_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'planName',
+    'overview',
+    'weeklyStructure',
+    'days',
+    'progressionGuidance',
+    'nutritionNotes',
+    'recoveryNotes',
+    'disclaimer'
+  ],
+  properties: {
+    planName: { type: 'string' },
+    overview: { type: 'string' },
+    weeklyStructure: { type: 'string' },
+    days: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'dayNumber',
+          'name',
+          'focus',
+          'duration',
+          'warmup',
+          'exercises',
+          'cooldown'
+        ],
+        properties: {
+          dayNumber: { type: 'number' },
+          name: { type: 'string' },
+          focus: { type: 'string' },
+          duration: { type: 'string' },
+          warmup: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['description', 'exercises'],
+            properties: {
+              description: { type: 'string' },
+              exercises: { type: 'array', items: { type: 'string' } }
+            }
+          },
+          exercises: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'sets', 'reps', 'rest', 'intent', 'notes', 'substitutions'],
+              properties: {
+                name: { type: 'string' },
+                sets: { type: 'number' },
+                reps: { type: 'string' },
+                rest: { type: 'string' },
+                intent: { type: 'string' },
+                notes: { type: 'string' },
+                substitutions: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          },
+          cooldown: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['description', 'exercises'],
+            properties: {
+              description: { type: 'string' },
+              exercises: { type: 'array', items: { type: 'string' } }
+            }
+          }
+        }
+      }
+    },
+    progressionGuidance: { type: 'string' },
+    nutritionNotes: { type: 'string' },
+    recoveryNotes: { type: 'string' },
+    disclaimer: { type: 'string' }
+  }
+};
+
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
@@ -41,8 +122,15 @@ export async function generatePlan(
       { role: 'system', content: system },
       { role: 'user', content: user }
     ],
-    response_format: { type: 'json_object' },
-    temperature: 0.5,
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        name: 'workout_plan',
+        strict: true,
+        schema: PLAN_JSON_SCHEMA
+      }
+    },
+    temperature: 0.2,
     max_tokens: 2000
   });
 
@@ -65,8 +153,15 @@ export async function generatePlan(
       { role: 'system', content: system },
       { role: 'user', content: user }
     ],
-    response_format: { type: 'json_object' },
-    temperature: 0.3,
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        name: 'workout_plan',
+        strict: true,
+        schema: PLAN_JSON_SCHEMA
+      }
+    },
+    temperature: 0.2,
     max_tokens: 2000
   });
 
