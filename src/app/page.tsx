@@ -1,11 +1,6 @@
 export default function Home() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.18),_transparent_50%),radial-gradient(circle_at_20%_40%,_rgba(16,185,129,0.12),_transparent_45%),radial-gradient(circle_at_80%_20%,_rgba(59,130,246,0.12),_transparent_40%)]" />
-      <div className="absolute -left-24 top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl animate-float-slow" />
-      <div className="absolute right-10 top-10 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl animate-float" />
-      <div className="absolute bottom-10 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-sky-400/10 blur-[120px] animate-pulse-soft" />
-
+    <main className="relative min-h-screen bg-transparent">
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-12 md:py-16">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
           <div className="space-y-8 text-center lg:text-left">

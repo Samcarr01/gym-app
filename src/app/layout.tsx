@@ -23,7 +23,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} antialiased`}>{children}</body>
+      <body className={`${inter.className} antialiased`}>
+        <div className="app-shell">
+          <div className="app-bg" />
+          <div className="app-blob app-blob-1" />
+          <div className="app-blob app-blob-2" />
+          <div className="app-blob app-blob-3" />
+          <div className="relative z-10">{children}</div>
+        </div>
+      </body>
     </html>
   );
 }
