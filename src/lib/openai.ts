@@ -102,7 +102,7 @@ export async function generatePlan(
   const { system, user } = buildPrompt(questionnaire, existingPlan);
   const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
 
-  const response = await openai.responses.parse({
+  const response = await openai.responses.create({
     model,
     input: user,
     instructions: system,
@@ -118,30 +118,48 @@ export async function generatePlan(
     max_output_tokens: 2000
   });
 
-  if (!response.output_parsed) {
-    console.error('AI response parse failed, retrying once');
-    const retry = await openai.responses.parse({
-      model,
-      input: user,
-      instructions: system,
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'workout_plan',
-          strict: true,
-          schema: PLAN_JSON_SCHEMA
-        }
-      },
-      temperature: 0.1,
-      max_output_tokens: 2000
-    });
+  const raw = (response as any).output_text || '';
 
-    if (!retry.output_parsed) {
-      throw new Error('AI response parse failed');
-    }
-
-    return GeneratedPlanSchema.parse(retry.output_parsed);
+  try {
+    const parsed = parseJsonFromContent(raw);
+    return GeneratedPlanSchema.parse(parsed);
+  } catch (error) {
+    console.error('AI response parse failed, retrying with repair:', error);
   }
 
-  return GeneratedPlanSchema.parse(response.output_parsed);
+  const repairResponse = await openai.responses.create({
+    model,
+    input: `Fix the JSON below to be valid and match the required schema exactly. Output only valid JSON.\n\n${raw}`,
+    instructions:
+      'You are a JSON repair tool. Return ONLY a valid JSON object that matches the schema.',
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'workout_plan',
+        strict: true,
+        schema: PLAN_JSON_SCHEMA
+      }
+    },
+    temperature: 0,
+    max_output_tokens: 2000
+  });
+
+  const repairedRaw = (repairResponse as any).output_text || '';
+  const repairedParsed = parseJsonFromContent(repairedRaw);
+  return GeneratedPlanSchema.parse(repairedParsed);
+}
+
+function parseJsonFromContent(content: string): unknown {
+  const trimmed = content.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf('{');
+    const end = trimmed.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      const snippet = trimmed.slice(start, end + 1);
+      return JSON.parse(snippet);
+    }
+    throw new Error('Invalid JSON in AI response');
+  }
 }
