@@ -128,6 +128,15 @@ export async function generatePlan(
     const parsed = parseJsonFromContent(raw);
     const plan = GeneratedPlanSchema.parse(parsed);
     const normalized = normalizePlan(plan, questionnaire);
+
+    // Validate quality before refining
+    const validation = validatePlanQuality(normalized, questionnaire);
+    if (!validation.valid) {
+      console.warn('Plan quality issues detected:', validation.issues);
+      // Try one more time with explicit feedback
+      return await retryWithQualityFeedback(openai, model, system, user, normalized, validation.issues, questionnaire);
+    }
+
     return await refinePlanIfNeeded(openai, model, system, user, normalized, questionnaire);
   } catch (error) {
     console.error('AI response parse failed, retrying with repair:', error);
@@ -170,6 +179,138 @@ function parseJsonFromContent(content: string): unknown {
     }
     throw new Error('Invalid JSON in AI response');
   }
+}
+
+const BANNED_PHRASES = [
+  'Core lift selected to match your goals and targets',
+  'Accessory work to round out the session',
+  'Included to directly address your stated targets',
+  'Use a controlled tempo and focus on form',
+  'Selected to support your goals',
+  'Chosen based on your preferences'
+];
+
+function validatePlanQuality(plan: GeneratedPlan, questionnaire: QuestionnaireData): { valid: boolean; issues: string[] } {
+  const issues: string[] = [];
+
+  // Check for banned phrases in exercise rationale/intent
+  for (const day of plan.days) {
+    for (const exercise of day.exercises) {
+      const textToCheck = `${exercise.intent} ${exercise.rationale} ${exercise.notes}`.toLowerCase();
+      for (const banned of BANNED_PHRASES) {
+        if (textToCheck.includes(banned.toLowerCase())) {
+          issues.push(`Exercise "${exercise.name}" contains banned phrase: "${banned}"`);
+        }
+      }
+
+      // Check that rationale is different from intent
+      if (exercise.rationale === exercise.intent) {
+        issues.push(`Exercise "${exercise.name}" has identical rationale and intent (not personalized)`);
+      }
+
+      // Check that progressionNote exists and is substantial
+      if (!exercise.progressionNote || exercise.progressionNote.length < 20) {
+        issues.push(`Exercise "${exercise.name}" missing detailed progression guidance`);
+      }
+
+      // Check if exercise name contains multiple favorite exercises combined
+      const favorites = questionnaire.preferences.favouriteExercises;
+      if (favorites.length > 1) {
+        const exerciseNameLower = exercise.name.toLowerCase();
+        const matchingFavorites = favorites.filter(fav =>
+          fav.trim() && exerciseNameLower.includes(fav.toLowerCase())
+        );
+        if (matchingFavorites.length > 1) {
+          issues.push(`Exercise "${exercise.name}" incorrectly combines multiple favorites (${matchingFavorites.join(' and ')}). Create separate exercises!`);
+        }
+      }
+    }
+  }
+
+  // Check for meal examples in nutrition notes
+  const hasBreakfast = plan.nutritionNotes.toLowerCase().includes('breakfast');
+  const hasLunch = plan.nutritionNotes.toLowerCase().includes('lunch');
+  const hasSampleMeals = plan.nutritionNotes.includes('Sample') || plan.nutritionNotes.includes('sample');
+
+  if (!hasBreakfast || !hasLunch || !hasSampleMeals) {
+    issues.push('Nutrition notes missing required meal examples (must include breakfast, lunch, sample meals)');
+  }
+
+  return { valid: issues.length === 0, issues };
+}
+
+async function retryWithQualityFeedback(
+  openai: OpenAI,
+  model: string,
+  system: string,
+  userProfile: string,
+  failedPlan: GeneratedPlan,
+  issues: string[],
+  questionnaire: QuestionnaireData
+): Promise<GeneratedPlan> {
+  const feedbackPrompt = `
+🚨 QUALITY CHECK FAILED - FIX THESE ISSUES IMMEDIATELY 🚨
+
+The previous plan had the following problems:
+${issues.map((issue, i) => `${i + 1}. ${issue}`).join('\n')}
+
+CRITICAL FIXES REQUIRED:
+
+1. EVERY exercise rationale MUST be UNIQUE and reference THIS USER'S specific situation:
+   - Reference their weak points: ${questionnaire.experience.weakPoints.join(', ') || 'none mentioned'}
+   - Reference their equipment: ${questionnaire.equipment.gymAccess ? 'gym access' : 'no gym, limited equipment'}
+   - Reference their injuries/restrictions: ${questionnaire.injuries.currentInjuries.length > 0 ? 'has injuries' : 'no injuries'}
+   - Reference their favorites: ${questionnaire.preferences.favouriteExercises.join(', ') || 'none mentioned'}
+
+2. NEVER USE THESE PHRASES (instant failure):
+   - "Core lift selected to match your goals"
+   - "Accessory work to round out"
+   - "Use a controlled tempo and focus on form"
+
+3. nutritionNotes MUST include actual meal examples:
+   Sample Training Day Meals:
+   - Breakfast (7:00 AM): 4 eggs, 2 slices whole wheat toast, banana - 40g protein
+   - Lunch (12:00 PM): Grilled chicken breast (200g), rice (150g), mixed vegetables - 45g protein
+   [etc.]
+
+4. EVERY exercise progressionNote must be specific (20+ characters):
+   - Good: "Add 2.5kg when all sets hit 10 clean reps, deload after 3 weeks"
+   - Bad: "Progress gradually"
+
+Original user context:
+${userProfile}
+
+Now generate a CORRECTED plan with all issues fixed.`;
+
+  const response = await openai.responses.create({
+    model,
+    input: feedbackPrompt,
+    instructions: system,
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'workout_plan',
+        strict: true,
+        schema: PLAN_JSON_SCHEMA
+      }
+    },
+    temperature: 0.4,
+    max_output_tokens: 6000
+  });
+
+  const raw = (response as any).output_text || '';
+  const parsed = parseJsonFromContent(raw);
+  const retried = GeneratedPlanSchema.parse(parsed);
+  const normalized = normalizePlan(retried, questionnaire);
+
+  // Check quality again
+  const revalidation = validatePlanQuality(normalized, questionnaire);
+  if (!revalidation.valid) {
+    console.error('Retry still failed quality check:', revalidation.issues);
+    // Return it anyway but log the failure
+  }
+
+  return await refinePlanIfNeeded(openai, model, system, userProfile, normalized, questionnaire);
 }
 
 async function refinePlanIfNeeded(

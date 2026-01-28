@@ -330,7 +330,8 @@ ${
 }
 
 ### Key User Preferences
-- **Favorite exercises to include**: ${questionnaire.preferences.favouriteExercises.join(', ') || 'None specified'}
+- **Favorite exercises to include as SEPARATE exercises**: ${questionnaire.preferences.favouriteExercises.length > 0 ? questionnaire.preferences.favouriteExercises.map((ex, i) => `${i + 1}. ${ex}`).join('; ') : 'None specified'}
+  ${questionnaire.preferences.favouriteExercises.length > 0 ? '⚠️ IMPORTANT: Create each of these as a SEPARATE exercise in the plan, not combined!' : ''}
 - **Exercises to avoid**: ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}
 - **Preferred split**: ${questionnaire.preferences.preferredSplit?.replace('_', ' ') || 'Choose best based on goals and recovery'}
 - **Cardio preference**: ${questionnaire.preferences.cardioPreference}
