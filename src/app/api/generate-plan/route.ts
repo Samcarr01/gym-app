@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
             ...body.questionnaire,
             goals: {
               ...body.questionnaire.goals,
+              secondaryGoal:
+                body.questionnaire.goals?.secondaryGoal === '' ? null : body.questionnaire.goals?.secondaryGoal,
               specificTargets: sanitizeStringArray(body.questionnaire.goals?.specificTargets)
             },
             experience: {
@@ -47,6 +49,8 @@ export async function POST(request: NextRequest) {
             },
             equipment: {
               ...body.questionnaire.equipment,
+              gymType:
+                body.questionnaire.equipment?.gymType === '' ? null : body.questionnaire.equipment?.gymType,
               availableEquipment: sanitizeStringArray(body.questionnaire.equipment?.availableEquipment),
               limitedEquipment: sanitizeStringArray(body.questionnaire.equipment?.limitedEquipment)
             },
@@ -64,6 +68,10 @@ export async function POST(request: NextRequest) {
             },
             preferences: {
               ...body.questionnaire.preferences,
+              preferredSplit:
+                body.questionnaire.preferences?.preferredSplit === ''
+                  ? null
+                  : body.questionnaire.preferences?.preferredSplit,
               favouriteExercises: sanitizeStringArray(body.questionnaire.preferences?.favouriteExercises),
               dislikedExercises: sanitizeStringArray(body.questionnaire.preferences?.dislikedExercises)
             }

@@ -39,7 +39,9 @@ export function EquipmentStep() {
             <Label htmlFor="gymType">Gym Type</Label>
             <Select
               id="gymType"
-              {...register('equipment.gymType')}
+              {...register('equipment.gymType', {
+                setValueAs: (value) => (value === '' ? null : value)
+              })}
               placeholder="Select gym type"
             >
               <option value="">Select type</option>

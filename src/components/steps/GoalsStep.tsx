@@ -40,7 +40,9 @@ export function GoalsStep() {
           <Label htmlFor="secondaryGoal">Secondary Goal (Optional)</Label>
           <Select
             id="secondaryGoal"
-            {...register('goals.secondaryGoal')}
+            {...register('goals.secondaryGoal', {
+              setValueAs: (value) => (value === '' ? null : value)
+            })}
             placeholder="Select a secondary goal"
           >
             <option value="">None</option>

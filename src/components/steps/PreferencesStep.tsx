@@ -45,7 +45,9 @@ export function PreferencesStep() {
           <Label htmlFor="preferredSplit">Preferred Training Split (Optional)</Label>
           <Select
             id="preferredSplit"
-            {...register('preferences.preferredSplit')}
+            {...register('preferences.preferredSplit', {
+              setValueAs: (value) => (value === '' ? null : value)
+            })}
             placeholder="Select a split or leave blank for AI to decide"
           >
             <option value="">No preference</option>
