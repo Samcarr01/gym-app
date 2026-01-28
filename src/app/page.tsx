@@ -93,7 +93,7 @@ export default function Home() {
               <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/40 via-emerald-500/10 to-transparent blur-2xl animate-float-slow" />
               <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-3 shadow-xl">
                 <img
-                  src="/sam-carr.jpg"
+                  src="/sam-carr.png"
                   alt="Sam Carr, builder of this app"
                   className="h-[420px] w-full object-cover rounded-2xl"
                 />
@@ -140,7 +140,7 @@ export default function Home() {
                 </a>
               </div>
               <p className="text-xs text-muted-foreground">
-                Drop the photo at <span className="text-primary">/public/sam-carr.jpg</span> if it isn&apos;t showing yet.
+                Drop the photo at <span className="text-primary">/public/sam-carr.png</span> if it isn&apos;t showing yet.
               </p>
             </div>
           </div>
