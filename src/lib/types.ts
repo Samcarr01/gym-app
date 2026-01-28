@@ -162,7 +162,7 @@ export const ExerciseSchema = z.object({
   rationale: z.string(), // NEW: Specific reasoning for THIS user
   notes: z.string(),
   substitutions: z.array(z.string()),
-  progressionNote: z.string().optional() // NEW: How to progress THIS movement
+  progressionNote: z.string() // NEW: How to progress THIS movement (required for AI consistency)
 });
 
 export const WorkoutDaySchema = z.object({

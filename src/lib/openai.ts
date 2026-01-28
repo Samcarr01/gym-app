@@ -54,7 +54,7 @@ const PLAN_JSON_SCHEMA = {
             items: {
               type: 'object',
               additionalProperties: false,
-              required: ['name', 'sets', 'reps', 'rest', 'intent', 'rationale', 'notes', 'substitutions'],
+              required: ['name', 'sets', 'reps', 'rest', 'intent', 'rationale', 'notes', 'substitutions', 'progressionNote'],
               properties: {
                 name: { type: 'string' },
                 sets: { type: 'number' },
