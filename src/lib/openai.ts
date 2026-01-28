@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { QuestionnaireData, GeneratedPlan, GeneratedPlanSchema } from '@/lib/types';
 import { buildPrompt } from '@/lib/prompts';
+import { normalizePlan } from '@/lib/plan-normalizer';
 
 const PLAN_JSON_SCHEMA = {
   type: 'object',
@@ -122,7 +123,8 @@ export async function generatePlan(
 
   try {
     const parsed = parseJsonFromContent(raw);
-    return GeneratedPlanSchema.parse(parsed);
+    const plan = GeneratedPlanSchema.parse(parsed);
+    return normalizePlan(plan, questionnaire);
   } catch (error) {
     console.error('AI response parse failed, retrying with repair:', error);
   }
@@ -146,7 +148,8 @@ export async function generatePlan(
 
   const repairedRaw = (repairResponse as any).output_text || '';
   const repairedParsed = parseJsonFromContent(repairedRaw);
-  return GeneratedPlanSchema.parse(repairedParsed);
+  const repairedPlan = GeneratedPlanSchema.parse(repairedParsed);
+  return normalizePlan(repairedPlan, questionnaire);
 }
 
 function parseJsonFromContent(content: string): unknown {

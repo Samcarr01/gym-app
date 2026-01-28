@@ -19,6 +19,9 @@ CRITICAL RULES:
 - Keep the plan concise: limit exercises per day to 5 unless a max is specified
 - Keep text brief: 1 sentence per description/intent/notes
 - If maxExercisesPerSession is provided, do not exceed it
+- MUST use the questionnaire data: incorporate goals, timeframe, specific targets, recovery, nutrition, and preferences
+- If favourite exercises are provided, include them unless they conflict with injuries or equipment
+- If disliked exercises are provided, avoid them
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object matching this exact structure:
