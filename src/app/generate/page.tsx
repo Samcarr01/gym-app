@@ -123,35 +123,82 @@ function LoadingState({
   statusStage: string;
 }) {
   const clampedProgress = Math.min(100, Math.max(5, progress || 5));
+  const stages = [
+    { id: 'validate', label: 'Validating inputs' },
+    { id: 'prepare', label: 'Building blueprint' },
+    { id: 'generate', label: 'Generating plan' },
+    { id: 'finalize', label: 'Final touches' }
+  ];
+  const stageIndex = Math.max(
+    0,
+    stages.findIndex((stage) => stage.id === statusStage)
+  );
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-      <div className="relative">
-        <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
-        <div className="absolute inset-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-      <div className="text-center space-y-2">
-        <h2 className="text-xl font-semibold">Building your plan...</h2>
-        <p className="text-muted-foreground">{statusMessage}</p>
-      </div>
-      <div className="w-full max-w-md space-y-2">
-        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all duration-500"
-            style={{ width: `${clampedProgress}%` }}
-          />
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="relative w-full max-w-2xl">
+        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/20 via-emerald-400/5 to-transparent blur-2xl" />
+        <div className="relative rounded-2xl border bg-card/80 backdrop-blur p-8 md:p-10 space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="relative h-14 w-14">
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-md" />
+              <div className="absolute inset-0 rounded-full border border-primary/30" />
+              <div className="absolute inset-1 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            </div>
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                Live generation
+              </div>
+              <h2 className="text-2xl font-semibold tracking-tight">Building your plan</h2>
+              <p className="text-sm text-muted-foreground">{statusMessage}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="relative h-2.5 rounded-full bg-secondary overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-primary/60 via-primary to-emerald-400/70 transition-all duration-700"
+                style={{ width: `${clampedProgress}%` }}
+              />
+              <div className="absolute inset-0 animate-[shine_2.2s_linear_infinite] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)]" />
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{clampedProgress}% complete</span>
+              <span>Elapsed: {elapsedSeconds}s</span>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              {stages.map((stage, index) => {
+                const isActive = index === stageIndex;
+                const isDone = index < stageIndex;
+                return (
+                  <div key={stage.id} className="flex items-center gap-3 text-sm">
+                    <span
+                      className={[
+                        'h-2.5 w-2.5 rounded-full',
+                        isDone ? 'bg-primary' : '',
+                        isActive ? 'bg-primary ring-4 ring-primary/20' : '',
+                        !isDone && !isActive ? 'bg-muted-foreground/40' : ''
+                      ].join(' ')}
+                    />
+                    <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
+                      {stage.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground space-y-2">
+              <p className="text-sm text-foreground">What the AI is doing</p>
+              <p>Applying your goals, targets, and recovery inputs to choose the split and volume.</p>
+              <p>Injecting the knowledge base and refining the plan for your constraints.</p>
+              <p className="text-primary/80">This stays live until the plan is ready.</p>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Elapsed: {elapsedSeconds}s</span>
-          <span className="capitalize">{statusStage.replace('_', ' ')}</span>
-        </div>
-      </div>
-      <div className="flex gap-2 text-xs text-muted-foreground">
-        <span className="animate-pulse">Analysing your profile</span>
-        <span>•</span>
-        <span className="animate-pulse delay-75">Selecting exercises</span>
-        <span>•</span>
-        <span className="animate-pulse delay-150">Building structure</span>
       </div>
     </div>
   );

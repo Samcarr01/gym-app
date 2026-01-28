@@ -55,6 +55,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes shine {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
 @media print {
   body {
     background: white !important;
