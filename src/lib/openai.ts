@@ -124,7 +124,8 @@ export async function generatePlan(
   try {
     const parsed = parseJsonFromContent(raw);
     const plan = GeneratedPlanSchema.parse(parsed);
-    return normalizePlan(plan, questionnaire);
+    const normalized = normalizePlan(plan, questionnaire);
+    return await refinePlanIfNeeded(openai, model, system, user, normalized, questionnaire);
   } catch (error) {
     console.error('AI response parse failed, retrying with repair:', error);
   }
@@ -149,7 +150,8 @@ export async function generatePlan(
   const repairedRaw = (repairResponse as any).output_text || '';
   const repairedParsed = parseJsonFromContent(repairedRaw);
   const repairedPlan = GeneratedPlanSchema.parse(repairedParsed);
-  return normalizePlan(repairedPlan, questionnaire);
+  const normalizedRepaired = normalizePlan(repairedPlan, questionnaire);
+  return await refinePlanIfNeeded(openai, model, system, user, normalizedRepaired, questionnaire);
 }
 
 function parseJsonFromContent(content: string): unknown {
@@ -164,5 +166,62 @@ function parseJsonFromContent(content: string): unknown {
       return JSON.parse(snippet);
     }
     throw new Error('Invalid JSON in AI response');
+  }
+}
+
+async function refinePlanIfNeeded(
+  openai: OpenAI,
+  model: string,
+  system: string,
+  userProfile: string,
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData
+): Promise<GeneratedPlan> {
+  const reviewPrompt = `
+You are reviewing an AI-generated workout plan for alignment with the user's questionnaire.
+Your job is to fix any mismatches and improve quality, while keeping the same JSON schema.
+
+Rules:
+- Must reflect primary/secondary goals and timeframe
+- Must incorporate specific targets
+- Must reflect recovery (sleep, stress, recovery capacity)
+- Must reflect nutrition approach + protein intake + restrictions
+- Include favourite exercises when safe and available
+- Exclude disliked exercises
+- Respect max exercises per session
+- Respect equipment and injuries
+
+User questionnaire data:
+${userProfile}
+
+Current plan JSON:
+${JSON.stringify(plan)}
+
+Return ONLY a valid JSON object that matches the schema exactly.`;
+
+  try {
+    const response = await openai.responses.create({
+      model,
+      input: reviewPrompt,
+      instructions: system,
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'workout_plan',
+          strict: true,
+          schema: PLAN_JSON_SCHEMA
+        }
+      },
+      temperature: 0.2,
+      max_output_tokens: 2000
+    });
+
+    const raw = (response as any).output_text || '';
+    const parsed = parseJsonFromContent(raw);
+    const refined = GeneratedPlanSchema.parse(parsed);
+    return normalizePlan(refined, questionnaire);
+  } catch (error) {
+    console.error('Plan refinement failed, returning normalized plan:', error);
+    return plan;
   }
 }

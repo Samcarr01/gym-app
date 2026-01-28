@@ -1,4 +1,5 @@
 import { QuestionnaireData, InjuryRecord } from '@/lib/types';
+import { getTrainingKnowledge } from '@/lib/training-knowledge';
 
 const SYSTEM_INSTRUCTIONS = `You are an expert strength and conditioning coach with 20+ years of experience.
 You create personalised training programmes that are:
@@ -22,6 +23,15 @@ CRITICAL RULES:
 - MUST use the questionnaire data: incorporate goals, timeframe, specific targets, recovery, nutrition, and preferences
 - If favourite exercises are provided, include them unless they conflict with injuries or equipment
 - If disliked exercises are provided, avoid them
+
+QUALITY CHECKLIST (REQUIRED):
+- The plan clearly reflects the user's primary goal and timeframe
+- Specific targets are addressed directly in the plan
+- Recovery notes match sleep/stress/recovery capacity responses
+- Nutrition notes match the user's nutrition approach and protein intake
+- Favourite exercises appear where safe and appropriate
+- Disliked exercises are excluded
+- Availability (days/week, session duration) is respected
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object matching this exact structure:
@@ -61,6 +71,8 @@ You must respond with a valid JSON object matching this exact structure:
   "recoveryNotes": "string - rest and recovery advice",
   "disclaimer": "Consult a healthcare professional before starting any exercise program."
 }`;
+
+const TRAINING_KNOWLEDGE = getTrainingKnowledge();
 
 const UPDATE_MODE_PROMPT = `The user has an existing plan they want to update. Here is their current plan:
 
@@ -203,8 +215,12 @@ ${formatInjuries(questionnaire.injuries)}
 
 Please generate a personalised workout plan based on this profile.`;
 
+  const system = TRAINING_KNOWLEDGE
+    ? `${SYSTEM_INSTRUCTIONS}\n\n=== TRAINING KNOWLEDGE BASE ===\n${TRAINING_KNOWLEDGE}`
+    : SYSTEM_INSTRUCTIONS;
+
   return {
-    system: SYSTEM_INSTRUCTIONS,
+    system,
     user
   };
 }

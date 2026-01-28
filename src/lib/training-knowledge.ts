@@ -45,6 +45,17 @@ ${FITNESS_OS_KNOWLEDGE}
 ${RESEARCH_COMPENDIUM}
 `;
 
+function isPlaceholder(text: string): boolean {
+  return text.includes('TODO: Paste') || text.includes('Leave this section empty');
+}
+
+export function getTrainingKnowledge(): string {
+  if (isPlaceholder(FITNESS_OS_KNOWLEDGE) && isPlaceholder(RESEARCH_COMPENDIUM)) {
+    return '';
+  }
+  return COMBINED_TRAINING_KNOWLEDGE.trim();
+}
+
 // === Quick Reference: How to Use ===
 //
 // Option 1: Add to system instructions (recommended)
