@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generatePlan } from '@/lib/openai';
 import { GeneratePlanRequestSchema } from '@/lib/types';
 
-// Allow up to 30 seconds for plan generation
-export const maxDuration = 30;
+// Allow more time for plan generation on Vercel
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
