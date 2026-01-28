@@ -74,6 +74,74 @@ const ACCESSORY_POOL: Record<string, string[]> = {
   core: ['Plank', 'Dead Bug', 'Pallof Press', 'Side Plank', 'Bird Dog', 'Hollow Hold']
 };
 
+const MAIN_LIFT_KEYWORDS = ['squat', 'deadlift', 'bench', 'press', 'row', 'pull-up', 'pull up', 'chin', 'overhead'];
+
+const EQUIPMENT_SWAP_MAP: Array<{
+  keywords: string[];
+  swap: string;
+}> = [
+  { keywords: ['bench press'], swap: 'Dumbbell Bench Press' },
+  { keywords: ['barbell bench'], swap: 'Push-Up' },
+  { keywords: ['squat'], swap: 'Goblet Squat' },
+  { keywords: ['deadlift'], swap: 'Hip Hinge (DB/KB)' },
+  { keywords: ['leg press'], swap: 'Split Squat' },
+  { keywords: ['lat pulldown'], swap: 'Band Lat Pulldown' },
+  { keywords: ['cable row'], swap: 'Band Row' },
+  { keywords: ['overhead press'], swap: 'Dumbbell Shoulder Press' }
+];
+
+function equipmentHints(questionnaire: QuestionnaireData): string {
+  const hints = [
+    ...(questionnaire.equipment.availableEquipment || []),
+    ...(questionnaire.equipment.limitedEquipment || [])
+  ];
+  return hints.join(' ').toLowerCase();
+}
+
+function applyEquipmentSwap(name: string, questionnaire: QuestionnaireData): string {
+  if (questionnaire.equipment.gymAccess) return name;
+  const hints = equipmentHints(questionnaire);
+  const lower = name.toLowerCase();
+  for (const rule of EQUIPMENT_SWAP_MAP) {
+    if (rule.keywords.some((keyword) => lower.includes(keyword))) {
+      return rule.swap;
+    }
+  }
+  if (hints.includes('no barbell') || hints.includes('no rack')) {
+    for (const rule of EQUIPMENT_SWAP_MAP) {
+      if (rule.keywords.some((keyword) => lower.includes(keyword))) {
+        return rule.swap;
+      }
+    }
+  }
+  return name;
+}
+
+function rankExercise(name: string): number {
+  const lower = name.toLowerCase();
+  if (MAIN_LIFT_KEYWORDS.some((keyword) => lower.includes(keyword))) return 0;
+  return 1;
+}
+
+function reorderExercises(plan: GeneratedPlan) {
+  for (const day of plan.days) {
+    day.exercises = [...day.exercises].sort((a, b) => rankExercise(a.name) - rankExercise(b.name));
+  }
+}
+
+type FocusType = 'upper' | 'lower' | 'full';
+
+function getFocusForExercise(name: string): FocusType {
+  const lower = name.toLowerCase();
+  if (lower.includes('squat') || lower.includes('deadlift') || lower.includes('leg') || lower.includes('lunge') || lower.includes('calf') || lower.includes('glute')) {
+    return 'lower';
+  }
+  if (lower.includes('bench') || lower.includes('row') || lower.includes('press') || lower.includes('pull') || lower.includes('curl') || lower.includes('tricep') || lower.includes('shoulder')) {
+    return 'upper';
+  }
+  return 'full';
+}
+
 const TARGET_EXERCISE_MAP: Array<{ keywords: string[]; exercises: string[]; focus: 'upper' | 'lower' | 'full' }> = [
   { keywords: ['bench', 'chest', 'press'], exercises: ['Bench Press', 'Incline Dumbbell Press'], focus: 'upper' },
   { keywords: ['squat', 'leg', 'quads'], exercises: ['Squat', 'Front Squat', 'Leg Press'], focus: 'lower' },
@@ -182,6 +250,68 @@ function deriveTargetExercises(targets: string[]): Array<{ name: string; focus: 
   return selected;
 }
 
+function buildMandatoryExercises(questionnaire: QuestionnaireData): Array<{ name: string; focus: FocusType }> {
+  const mandatory: Array<{ name: string; focus: FocusType }> = [];
+  const goal = questionnaire.goals.primaryGoal;
+  const targets = normalizeList(splitList(questionnaire.goals.specificTargets));
+  const favourites = normalizeList(splitList(questionnaire.preferences.favouriteExercises));
+
+  if (goal === 'strength' || goal === 'muscle_building') {
+    ['Squat', 'Bench Press', 'Deadlift', 'Overhead Press', 'Row', 'Pull-Up'].forEach((exercise) => {
+      mandatory.push({ name: exercise, focus: getFocusForExercise(exercise) });
+    });
+  }
+
+  for (const target of deriveTargetExercises(targets)) {
+    mandatory.push(target);
+  }
+
+  for (const fav of favourites) {
+    mandatory.push({ name: fav, focus: getFocusForExercise(fav) });
+  }
+
+  return mandatory;
+}
+
+function ensureMandatoryExercises(
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData,
+  restricted: string[],
+  disliked: string[],
+  maxExercises: number | null | undefined
+) {
+  const mandatory = buildMandatoryExercises(questionnaire);
+  if (mandatory.length === 0) return;
+
+  for (const item of mandatory) {
+    const resolvedName = applyEquipmentSwap(item.name, questionnaire);
+    const already = plan.days.some((day) =>
+      day.exercises.some((ex) => ex.name.toLowerCase().includes(resolvedName.toLowerCase()))
+    );
+    if (already) continue;
+    if (containsKeyword(resolvedName, restricted) || containsKeyword(resolvedName, disliked)) continue;
+
+    const dayIndex = findDayForFocus(plan, item.focus);
+    const day = plan.days[dayIndex];
+    const template = day.exercises[0];
+    const exercise = {
+      name: resolvedName,
+      sets: template?.sets ?? 3,
+      reps: template?.reps ?? '6-10',
+      rest: template?.rest ?? '90 seconds',
+      intent: 'Core lift selected to match your goals and targets.',
+      notes: template?.notes ?? 'Use controlled form and progressive overload.',
+      substitutions: template?.substitutions ?? []
+    };
+
+    if (maxExercises && day.exercises.length >= maxExercises) {
+      day.exercises[day.exercises.length - 1] = exercise;
+    } else {
+      day.exercises.push(exercise);
+    }
+  }
+}
+
 function ensureTargetExercises(
   plan: GeneratedPlan,
   targets: string[],
@@ -231,6 +361,7 @@ function applyProgramDesign(
   for (const day of plan.days) {
     day.exercises = day.exercises.map((exercise, idx) => {
       const isMain = idx < 2;
+      const name = applyEquipmentSwap(exercise.name, questionnaire);
       const sets = getSetsForExercise(questionnaire.experience.currentLevel, isMain, questionnaire.recovery);
       const reps = isTimeBased(exercise.reps)
         ? exercise.reps
@@ -241,6 +372,7 @@ function applyProgramDesign(
 
       return {
         ...exercise,
+        name,
         sets,
         reps,
         rest
@@ -385,6 +517,7 @@ export function normalizePlan(
   }
 
   removeDislikedExercises(plan, disliked);
+  ensureMandatoryExercises(plan, questionnaire, restricted, disliked, maxExercises);
   ensureTargetExercises(plan, targetList, restricted, disliked, maxExercises);
   includeFavouriteExercises(plan, favourites, restricted, maxExercises);
   fillExercisesToExactCount(plan, questionnaire, restricted, disliked);
@@ -421,6 +554,7 @@ export function normalizePlan(
   const design = buildProgramDesign(questionnaire);
   plan.progressionGuidance = `${design.progressionModel} ${design.deloadGuidance} Main lifts use ${design.mainRepRange} reps with ${design.restMain} rest; accessories use ${design.accessoryRepRange} reps with ${design.restAccessory} rest. ${design.recoveryModifier}`;
 
+  reorderExercises(plan);
   applyProgramDesign(plan, questionnaire);
 
   return plan;
