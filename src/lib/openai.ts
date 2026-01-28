@@ -217,6 +217,10 @@ Rules:
 - Respect max exercises per session
 - Respect equipment and injuries
 - Ensure every day has exactly maxExercisesPerSession exercises if a max is provided
+- If sport-specific or a sport is mentioned, include power/strength, conditioning/engine, and mixed days
+- Avoid repeating the exact same main lift across multiple days (use variations)
+- Nutrition notes must include calorie guidance and meal timing/snack guidance
+- Overview must mention at least 2 specific user details (schedule, equipment, cardio preference, weak points, favourites)
 
 Must-match requirements (use these exact values where relevant):
 ${JSON.stringify(requirements)}

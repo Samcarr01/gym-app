@@ -24,6 +24,10 @@ CRITICAL RULES:
 - MUST use the questionnaire data: incorporate goals, timeframe, specific targets, recovery, nutrition, and preferences
 - If favourite exercises are provided, include them unless they conflict with injuries or equipment
 - If disliked exercises are provided, avoid them
+- If the goal is sport-specific or a sport is mentioned, structure the week with power/strength, conditioning/engine, and mixed days
+- Avoid repeating the exact same main lift every day; rotate variations when possible
+- Nutrition notes must include calorie guidance plus simple meal timing/snack guidance
+- The overview must mention at least 2 specific user details (schedule, equipment, cardio preference, weak points, favourite exercises)
 
 QUALITY CHECKLIST (REQUIRED):
 - The plan clearly reflects the user's primary goal and timeframe
@@ -33,6 +37,8 @@ QUALITY CHECKLIST (REQUIRED):
 - Favourite exercises appear where safe and appropriate
 - Disliked exercises are excluded
 - Availability (days/week, session duration) is respected
+- Exercise selection varies across days (no copy/paste days)
+- Overview includes 2+ personalized details from the questionnaire
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object matching this exact structure:
@@ -172,6 +178,7 @@ export function buildPrompt(
 - Availability: ${questionnaire.availability.daysPerWeek} days/week, ${questionnaire.availability.sessionDuration} minutes/session
 - Preferred split: ${questionnaire.preferences.preferredSplit?.replace('_', ' ') || 'No preference'}
 - If no preferred split is provided, choose the best split using the training knowledge base and user goal/recovery/experience
+- If sport-specific is selected or sport is mentioned, include power/strength, conditioning, and mixed days
 - Max exercises per session: ${questionnaire.constraints.maxExercisesPerSession || 'No limit'}
 - Favourite exercises (include): ${questionnaire.preferences.favouriteExercises.join(', ') || 'None'}
 - Disliked exercises (avoid): ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}

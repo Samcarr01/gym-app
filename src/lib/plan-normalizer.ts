@@ -56,11 +56,50 @@ function containsKeyword(text: string, keywords: string[]): boolean {
   return keywords.some((keyword) => lower.includes(keyword));
 }
 
-function ensureMaxExercises(plan: GeneratedPlan, maxExercises: number | null | undefined) {
+function isSportSpecific(questionnaire: QuestionnaireData): boolean {
+  if (questionnaire.goals.primaryGoal === 'sport_specific' || questionnaire.goals.secondaryGoal === 'sport_specific') {
+    return true;
+  }
+
+  const signalText = [
+    ...questionnaire.goals.specificTargets,
+    questionnaire.experience.recentTraining,
+    ...questionnaire.experience.strongPoints,
+    ...questionnaire.experience.weakPoints,
+    questionnaire.constraints.otherNotes
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return SPORT_SPECIFIC_KEYWORDS.some((keyword) => signalText.includes(keyword));
+}
+
+function isPriorityExercise(name: string, priorityKeywords: string[]): boolean {
+  if (isPowerExerciseName(name) || isConditioningExerciseName(name)) return true;
+  return containsKeyword(name, priorityKeywords);
+}
+
+function ensureMaxExercises(
+  plan: GeneratedPlan,
+  maxExercises: number | null | undefined,
+  priorityKeywords: string[] = []
+) {
   if (!maxExercises || maxExercises <= 0) return;
   for (const day of plan.days) {
     if (day.exercises.length > maxExercises) {
-      day.exercises = day.exercises.slice(0, maxExercises);
+      const priority: typeof day.exercises = [];
+      const others: typeof day.exercises = [];
+
+      for (const exercise of day.exercises) {
+        if (isPriorityExercise(exercise.name, priorityKeywords)) {
+          priority.push(exercise);
+        } else {
+          others.push(exercise);
+        }
+      }
+
+      day.exercises = [...priority, ...others].slice(0, maxExercises);
     }
   }
 }
@@ -74,7 +113,88 @@ const ACCESSORY_POOL: Record<string, string[]> = {
   core: ['Plank', 'Dead Bug', 'Pallof Press', 'Side Plank', 'Bird Dog', 'Hollow Hold']
 };
 
-const MAIN_LIFT_KEYWORDS = ['squat', 'deadlift', 'bench', 'press', 'row', 'pull-up', 'pull up', 'chin', 'overhead'];
+const MAIN_LIFT_KEYWORDS = [
+  'squat',
+  'deadlift',
+  'bench',
+  'press',
+  'row',
+  'pull-up',
+  'pull up',
+  'chin',
+  'overhead',
+  'jump',
+  'slam',
+  'swing',
+  'sprint',
+  'power',
+  'clean',
+  'snatch',
+  'med ball',
+  'medicine ball',
+  'plyo',
+  'throw'
+];
+
+const SPORT_SPECIFIC_KEYWORDS = [
+  'mma',
+  'boxing',
+  'kickboxing',
+  'muay thai',
+  'bjj',
+  'jiu jitsu',
+  'jiu-jitsu',
+  'grappling',
+  'wrestling',
+  'martial',
+  'combat',
+  'sparring',
+  'striking',
+  'fight',
+  'power',
+  'speed',
+  'agility'
+];
+
+const EXERCISE_VARIATIONS: Record<string, string[]> = {
+  squat: ['Front Squat', 'Box Squat', 'Goblet Squat', 'Split Squat', 'Bulgarian Split Squat', 'Leg Press'],
+  deadlift: ['Romanian Deadlift', 'Trap Bar Deadlift', 'Sumo Deadlift', 'Single-Leg RDL', 'Hip Thrust'],
+  bench: ['Incline Bench Press', 'Dumbbell Bench Press', 'Close-Grip Bench Press', 'Push-Up'],
+  row: ['Seated Row', 'Chest-Supported Row', 'Single-Arm Dumbbell Row', 'Lat Pulldown'],
+  overhead: ['Dumbbell Shoulder Press', 'Arnold Press', 'Landmine Press', 'Push Press'],
+  lunge: ['Reverse Lunge', 'Walking Lunge', 'Step-Up', 'Split Squat'],
+  carry: ['Suitcase Carry', 'Overhead Carry', 'Farmer Carry'],
+  pullup: ['Pull-Up', 'Chin-Up', 'Assisted Pull-Up', 'Lat Pulldown']
+};
+
+const POWER_EXERCISES = [
+  'Med Ball Slam',
+  'Kettlebell Swing',
+  'Box Jump',
+  'Broad Jump',
+  'Push Press',
+  'Explosive Push-Up'
+];
+
+const CONDITIONING_EXERCISES = [
+  'Sprint Intervals',
+  'Jump Rope Intervals',
+  'Assault Bike Intervals',
+  'Rowing Intervals',
+  'Shadowboxing Rounds',
+  'Circuit Finisher'
+];
+
+const MIXED_EXERCISES = [
+  'Shuttle Runs',
+  'Battle Rope Slams',
+  'Sled Push',
+  'Tempo Kettlebell Swings',
+  'Burpee Intervals'
+];
+
+const POWER_EXERCISE_KEYWORDS = ['power', 'jump', 'slam', 'swing', 'explosive', 'sprint', 'plyo', 'clean', 'snatch'];
+const CONDITIONING_EXERCISE_KEYWORDS = ['interval', 'conditioning', 'circuit', 'round', 'sprint', 'bike', 'row', 'jump rope', 'shadowboxing', 'burpee'];
 
 const EQUIPMENT_SWAP_MAP: Array<{
   keywords: string[];
@@ -98,12 +218,52 @@ function equipmentHints(questionnaire: QuestionnaireData): string {
   return hints.join(' ').toLowerCase();
 }
 
+function equipmentSupportsExercise(name: string, questionnaire: QuestionnaireData): boolean {
+  const hints = equipmentHints(questionnaire);
+  const lower = name.toLowerCase();
+  if (lower.includes('row') && !hints.includes('row')) return false;
+  if (lower.includes('bike') && !hints.includes('bike')) return false;
+  if (lower.includes('med ball') || lower.includes('medicine ball')) {
+    if (!hints.includes('med ball') && !hints.includes('medicine ball')) return false;
+  }
+  if (lower.includes('kettlebell') || lower.includes('kb')) {
+    if (!hints.includes('kettlebell') && !hints.includes('kb')) return false;
+  }
+  if (lower.includes('battle rope') || lower.includes('rope')) {
+    if (!hints.includes('rope') && !hints.includes('battle rope') && !hints.includes('jump rope')) return false;
+  }
+  if (lower.includes('sled')) {
+    if (!hints.includes('sled')) return false;
+  }
+  return true;
+}
+
+function pickExerciseOption(
+  options: string[],
+  questionnaire: QuestionnaireData,
+  restricted: string[],
+  disliked: string[],
+  used: Set<string>
+): string | null {
+  for (const option of options) {
+    const lower = option.toLowerCase();
+    if (used.has(lower)) continue;
+    if (!equipmentSupportsExercise(option, questionnaire) && !questionnaire.equipment.gymAccess) continue;
+    if (containsKeyword(option, restricted) || containsKeyword(option, disliked)) continue;
+    return option;
+  }
+  return null;
+}
+
 function applyEquipmentSwap(name: string, questionnaire: QuestionnaireData): string {
   if (questionnaire.equipment.gymAccess) return name;
   const hints = equipmentHints(questionnaire);
   const lower = name.toLowerCase();
   for (const rule of EQUIPMENT_SWAP_MAP) {
     if (rule.keywords.some((keyword) => lower.includes(keyword))) {
+      if (lower.includes('squat') && (lower.includes('goblet') || lower.includes('split') || lower.includes('bulgarian') || lower.includes('step-up'))) {
+        return name;
+      }
       return rule.swap;
     }
   }
@@ -142,6 +302,29 @@ function getFocusForExercise(name: string): FocusType {
   return 'full';
 }
 
+function getMovementBase(name: string): string | null {
+  const lower = name.toLowerCase();
+  if (lower.includes('squat')) return 'squat';
+  if (lower.includes('deadlift') || lower.includes('rdl')) return 'deadlift';
+  if (lower.includes('bench')) return 'bench';
+  if (lower.includes('row')) return 'row';
+  if (lower.includes('overhead') || lower.includes('shoulder press') || lower.includes('press')) return 'overhead';
+  if (lower.includes('lunge') || lower.includes('step-up')) return 'lunge';
+  if (lower.includes('carry')) return 'carry';
+  if (lower.includes('pull-up') || lower.includes('pull up') || lower.includes('chin')) return 'pullup';
+  return null;
+}
+
+function isPowerExerciseName(name: string): boolean {
+  const lower = name.toLowerCase();
+  return POWER_EXERCISE_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
+function isConditioningExerciseName(name: string): boolean {
+  const lower = name.toLowerCase();
+  return CONDITIONING_EXERCISE_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
 const TARGET_EXERCISE_MAP: Array<{ keywords: string[]; exercises: string[]; focus: 'upper' | 'lower' | 'full' }> = [
   { keywords: ['bench', 'chest', 'press'], exercises: ['Bench Press', 'Incline Dumbbell Press'], focus: 'upper' },
   { keywords: ['squat', 'leg', 'quads'], exercises: ['Squat', 'Front Squat', 'Leg Press'], focus: 'lower' },
@@ -154,6 +337,18 @@ const TARGET_EXERCISE_MAP: Array<{ keywords: string[]; exercises: string[]; focu
   { keywords: ['core', 'abs'], exercises: ['Plank', 'Dead Bug'], focus: 'full' },
   { keywords: ['look good', 'aesthetic'], exercises: ['Lateral Raise', 'Cable Fly', 'Bicep Curl'], focus: 'upper' },
   { keywords: ['stronger', 'strength'], exercises: ['Squat', 'Bench Press', 'Deadlift', 'Overhead Press'], focus: 'full' }
+];
+
+const WEAK_POINT_MAP: Array<{ keywords: string[]; exercises: string[]; focus: 'upper' | 'lower' | 'full' }> = [
+  { keywords: ['core', 'abs', 'midline'], exercises: ['Pallof Press', 'Dead Bug', 'Plank'], focus: 'full' },
+  { keywords: ['glute', 'glutes'], exercises: ['Hip Thrust', 'Glute Bridge'], focus: 'lower' },
+  { keywords: ['hamstring'], exercises: ['Romanian Deadlift', 'Leg Curl'], focus: 'lower' },
+  { keywords: ['quads', 'quad'], exercises: ['Leg Extension', 'Front Squat'], focus: 'lower' },
+  { keywords: ['back', 'lats'], exercises: ['Seated Row', 'Lat Pulldown'], focus: 'upper' },
+  { keywords: ['shoulder', 'delts'], exercises: ['Lateral Raise', 'Face Pull'], focus: 'upper' },
+  { keywords: ['arms', 'bicep', 'tricep'], exercises: ['Bicep Curl', 'Tricep Pushdown'], focus: 'upper' },
+  { keywords: ['conditioning', 'cardio', 'engine'], exercises: ['Rowing Intervals', 'Assault Bike Intervals'], focus: 'full' },
+  { keywords: ['power', 'speed'], exercises: ['Kettlebell Swing', 'Box Jump'], focus: 'full' }
 ];
 
 function isTimeBased(reps: string): boolean {
@@ -198,6 +393,8 @@ function fillExercisesToExactCount(
   const maxExercises = questionnaire.constraints.maxExercisesPerSession;
   if (!maxExercises || maxExercises <= 0) return;
 
+  const globalUsed = new Set(plan.days.flatMap((day) => day.exercises.map((ex) => ex.name.toLowerCase())));
+
   for (const day of plan.days) {
     if (day.exercises.length >= maxExercises) continue;
 
@@ -206,6 +403,7 @@ function fillExercisesToExactCount(
     const candidates = pool.filter(
       (name) =>
         !existingNames.has(name.toLowerCase()) &&
+        !globalUsed.has(name.toLowerCase()) &&
         !containsKeyword(name, restrictedKeywords) &&
         !containsKeyword(name, disliked)
     );
@@ -222,6 +420,7 @@ function fillExercisesToExactCount(
         notes: 'Use a controlled tempo and focus on form.',
         substitutions: []
       });
+      globalUsed.add(name.toLowerCase());
     }
   }
 }
@@ -362,13 +561,20 @@ function applyProgramDesign(
     day.exercises = day.exercises.map((exercise, idx) => {
       const isMain = idx < 2;
       const name = applyEquipmentSwap(exercise.name, questionnaire);
-      const sets = getSetsForExercise(questionnaire.experience.currentLevel, isMain, questionnaire.recovery);
-      const reps = isTimeBased(exercise.reps)
+      const preserve = isPowerExerciseName(name) || isConditioningExerciseName(name);
+      const sets = preserve
+        ? exercise.sets
+        : getSetsForExercise(questionnaire.experience.currentLevel, isMain, questionnaire.recovery);
+      const reps = preserve
         ? exercise.reps
-        : (isMain ? design.mainRepRange : design.accessoryRepRange);
-      const rest = isTimeBased(exercise.reps)
+        : (isTimeBased(exercise.reps)
+          ? exercise.reps
+          : (isMain ? design.mainRepRange : design.accessoryRepRange));
+      const rest = preserve
         ? exercise.rest
-        : (isMain ? design.restMain : design.restAccessory);
+        : (isTimeBased(exercise.reps)
+          ? exercise.rest
+          : (isMain ? design.restMain : design.restAccessory));
 
       return {
         ...exercise,
@@ -428,12 +634,344 @@ function includeFavouriteExercises(
   }
 }
 
+function buildNutritionNotes(questionnaire: QuestionnaireData): string {
+  const approach = questionnaire.nutrition.nutritionApproach;
+  const protein = questionnaire.nutrition.proteinIntake;
+  const restrictions = questionnaire.nutrition.dietaryRestrictions;
+  const supplements = questionnaire.nutrition.supplementUse;
+
+  const calorieGuidance = (() => {
+    switch (approach) {
+      case 'surplus':
+        return 'Aim for a 5-10% surplus (~250-300 kcal above maintenance).';
+      case 'deficit':
+        return 'Aim for a 10-20% deficit (~300-500 kcal below maintenance).';
+      case 'intuitive':
+        return 'Use portion control and hunger cues; keep intake consistent day to day.';
+      case 'maintenance':
+      default:
+        return 'Start around maintenance (bodyweight x 14-16 kcal/lb or 30-35 kcal/kg), then adjust by +/-100-200 kcal based on weekly trend.';
+    }
+  })();
+
+  const proteinGuidance = (() => {
+    switch (protein) {
+      case 'low':
+        return 'Protein target: ~1.2-1.6 g/kg (0.55-0.7 g/lb).';
+      case 'moderate':
+        return 'Protein target: ~1.6-1.8 g/kg (0.7-0.8 g/lb).';
+      case 'high':
+        return 'Protein target: ~1.8-2.2 g/kg (0.8-1.0 g/lb).';
+      case 'very_high':
+        return 'Protein target: ~2.2-2.6 g/kg (1.0-1.2 g/lb).';
+      default:
+        return 'Protein target: ~1.6-2.2 g/kg (0.7-1.0 g/lb).';
+    }
+  })();
+
+  const timingGuidance = 'Include protein in 3-4 meals; add a light pre-workout snack (carbs + protein) 60-90 min before and a post-workout meal within 1-2 hours.';
+
+  const restrictionNote = restrictions.length ? ` Restrictions: ${restrictions.join(', ')}.` : '';
+  const supplementNote = supplements.length ? ` Supplements: ${supplements.join(', ')}.` : '';
+
+  return `Nutrition: ${approach}. ${calorieGuidance} ${proteinGuidance} ${timingGuidance}${restrictionNote}${supplementNote}`.trim();
+}
+
+function diversifyExercisesAcrossDays(
+  plan: GeneratedPlan,
+  restricted: string[],
+  disliked: string[],
+  favourites: string[]
+) {
+  const usedByBase = new Map<string, Set<string>>();
+  const favouriteKeywords = favourites.map((fav) => fav.toLowerCase()).filter(Boolean);
+
+  for (const day of plan.days) {
+    for (const exercise of day.exercises) {
+      const base = getMovementBase(exercise.name);
+      if (!base) continue;
+
+      const nameLower = exercise.name.toLowerCase();
+      const used = usedByBase.get(base) ?? new Set<string>();
+
+      if (!used.has(nameLower)) {
+        used.add(nameLower);
+        usedByBase.set(base, used);
+        continue;
+      }
+
+      if (containsKeyword(exercise.name, favouriteKeywords)) {
+        continue;
+      }
+
+      const variations = EXERCISE_VARIATIONS[base] || [];
+      const replacement = variations.find((candidate) => {
+        const candidateLower = candidate.toLowerCase();
+        if (used.has(candidateLower)) return false;
+        if (containsKeyword(candidate, restricted) || containsKeyword(candidate, disliked)) return false;
+        return true;
+      });
+
+      if (replacement) {
+        exercise.name = replacement;
+        used.add(replacement.toLowerCase());
+        usedByBase.set(base, used);
+      }
+    }
+  }
+}
+
+type SportDayTemplate = {
+  name: string;
+  focus: string;
+  type: 'power' | 'conditioning' | 'mixed' | 'strength';
+};
+
+function getSportDayTemplates(days: number): SportDayTemplate[] {
+  const templates: SportDayTemplate[] = [
+    { name: 'Power + Strength', focus: 'Power/Strength', type: 'power' },
+    { name: 'Conditioning / Engine', focus: 'Conditioning', type: 'conditioning' },
+    { name: 'Mixed Strength + Conditioning', focus: 'Mixed', type: 'mixed' },
+    { name: 'Speed + Power', focus: 'Power/Speed', type: 'power' },
+    { name: 'Aerobic Base + Mobility', focus: 'Conditioning', type: 'conditioning' }
+  ];
+
+  return Array.from({ length: days }, (_, idx) => templates[idx % templates.length]);
+}
+
+function buildSportExercise(
+  name: string,
+  intent: string,
+  notes: string,
+  reps: string,
+  rest: string
+) {
+  return {
+    name,
+    sets: 3,
+    reps,
+    rest,
+    intent,
+    notes,
+    substitutions: []
+  };
+}
+
+function replaceOrAppendExercise(
+  day: GeneratedPlan['days'][number],
+  exercise: GeneratedPlan['days'][number]['exercises'][number],
+  maxExercises: number | null | undefined,
+  protectedKeywords: string[]
+) {
+  if (!maxExercises || day.exercises.length < maxExercises) {
+    day.exercises.push(exercise);
+    return;
+  }
+
+  let replaceIndex = -1;
+  for (let i = day.exercises.length - 1; i >= 0; i -= 1) {
+    if (!containsKeyword(day.exercises[i].name, protectedKeywords)) {
+      replaceIndex = i;
+      break;
+    }
+  }
+
+  if (replaceIndex === -1) {
+    replaceIndex = day.exercises.length - 1;
+  }
+
+  day.exercises[replaceIndex] = exercise;
+}
+
+function applyPreferredDayLabels(plan: GeneratedPlan, questionnaire: QuestionnaireData) {
+  const preferredDays = questionnaire.availability.preferredDays;
+  if (!preferredDays || preferredDays.length === 0) return;
+
+  const labels = preferredDays.slice(0, plan.days.length);
+  if (labels.length === 0) return;
+
+  for (let i = 0; i < plan.days.length; i += 1) {
+    const label = labels[i];
+    if (!label) continue;
+    const baseName = plan.days[i].name || `Day ${i + 1}`;
+    if (!baseName.toLowerCase().includes(label.toLowerCase())) {
+      plan.days[i].name = `${label} - ${baseName}`;
+    }
+  }
+}
+
+function ensureWeakPointExercises(
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData,
+  restricted: string[],
+  disliked: string[],
+  maxExercises: number | null | undefined
+) {
+  const weakPoints = normalizeList(splitList(questionnaire.experience.weakPoints));
+  if (weakPoints.length === 0) return;
+
+  const protectedKeywords = questionnaire.preferences.favouriteExercises.map((fav) => fav.toLowerCase()).filter(Boolean);
+  const lowerWeak = weakPoints.map((point) => point.toLowerCase());
+  const used = new Set(plan.days.flatMap((day) => day.exercises.map((ex) => ex.name.toLowerCase())));
+
+  for (const map of WEAK_POINT_MAP) {
+    if (!map.keywords.some((keyword) => lowerWeak.some((weak) => weak.includes(keyword)))) continue;
+
+    const option = pickExerciseOption(map.exercises, questionnaire, restricted, disliked, used);
+    if (!option) continue;
+
+    const dayIndex = findDayForFocus(plan, map.focus);
+    const day = plan.days[dayIndex];
+    const template = day.exercises[0];
+    const exercise = {
+      name: option,
+      sets: template?.sets ?? 3,
+      reps: template?.reps ?? '8-12',
+      rest: template?.rest ?? '60-90 sec',
+      intent: 'Included to address a stated weak point.',
+      notes: template?.notes ?? 'Use a controlled tempo and full range of motion.',
+      substitutions: []
+    };
+
+    replaceOrAppendExercise(day, exercise, maxExercises, protectedKeywords);
+    used.add(option.toLowerCase());
+  }
+}
+
+function ensureCardioFinishers(
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData,
+  restricted: string[],
+  disliked: string[],
+  maxExercises: number | null | undefined
+) {
+  const preference = questionnaire.preferences.cardioPreference;
+  if (preference === 'none') return;
+
+  const desired = preference === 'minimal'
+    ? 1
+    : (preference === 'moderate' ? 2 : Math.min(plan.days.length, 3));
+
+  const currentCount = plan.days.reduce((count, day) => {
+    return count + (day.exercises.some((exercise) => isConditioningExerciseName(exercise.name)) ? 1 : 0);
+  }, 0);
+
+  if (currentCount >= desired) return;
+
+  const protectedKeywords = questionnaire.preferences.favouriteExercises.map((fav) => fav.toLowerCase()).filter(Boolean);
+  const used = new Set(plan.days.flatMap((day) => day.exercises.map((ex) => ex.name.toLowerCase())));
+
+  let added = 0;
+  for (const day of plan.days) {
+    if (day.exercises.some((exercise) => isConditioningExerciseName(exercise.name))) {
+      continue;
+    }
+
+    const option = pickExerciseOption(CONDITIONING_EXERCISES, questionnaire, restricted, disliked, used)
+      || pickExerciseOption(MIXED_EXERCISES, questionnaire, restricted, disliked, used);
+    if (!option) continue;
+
+    const exercise = buildSportExercise(
+      option,
+      'Conditioning finisher aligned with your cardio preference.',
+      'Stay smooth and consistent as fatigue builds.',
+      '30-45 sec',
+      '45-60 sec'
+    );
+
+    replaceOrAppendExercise(day, exercise, maxExercises, protectedKeywords);
+    used.add(option.toLowerCase());
+    added += 1;
+    if (currentCount + added >= desired) break;
+  }
+}
+
+function applySportSpecificStructure(
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData,
+  restricted: string[],
+  disliked: string[],
+  favourites: string[],
+  maxExercises: number | null | undefined
+) {
+  if (!isSportSpecific(questionnaire)) return;
+
+  const templates = getSportDayTemplates(plan.days.length);
+  const protectedKeywords = favourites.map((fav) => fav.toLowerCase()).filter(Boolean);
+  const used = new Set(plan.days.flatMap((day) => day.exercises.map((ex) => ex.name.toLowerCase())));
+  const respectSplit = Boolean(questionnaire.preferences.preferredSplit);
+
+  plan.days.forEach((day, idx) => {
+    const template = templates[idx];
+    if (!respectSplit) {
+      day.name = template.name;
+      day.focus = template.focus;
+    }
+
+    const powerCount = day.exercises.filter((exercise) => isPowerExerciseName(exercise.name)).length;
+    const conditioningCount = day.exercises.filter((exercise) => isConditioningExerciseName(exercise.name)).length;
+    const desiredPower = template.type === 'power' || template.type === 'mixed' ? 1 : 0;
+    const desiredConditioning = template.type === 'conditioning'
+      ? 2
+      : (template.type === 'mixed' ? 1 : 0);
+
+    for (let i = powerCount; i < desiredPower; i += 1) {
+      const option = pickExerciseOption(POWER_EXERCISES, questionnaire, restricted, disliked, used);
+      if (option) {
+        const exercise = buildSportExercise(
+          option,
+          'Develop explosive power for sport performance.',
+          'Focus on speed and crisp technique.',
+          '3-5 reps',
+          '90-120 sec'
+        );
+        replaceOrAppendExercise(day, exercise, maxExercises, protectedKeywords);
+        used.add(option.toLowerCase());
+      }
+    }
+
+    for (let i = conditioningCount; i < desiredConditioning; i += 1) {
+      const option = pickExerciseOption(MIXED_EXERCISES, questionnaire, restricted, disliked, used)
+        || pickExerciseOption(CONDITIONING_EXERCISES, questionnaire, restricted, disliked, used);
+      if (option) {
+        const exercise = buildSportExercise(
+          option,
+          'Build fight-specific conditioning and engine.',
+          'Work at hard but sustainable pace.',
+          '30-45 sec',
+          '45-75 sec'
+        );
+        replaceOrAppendExercise(day, exercise, maxExercises, protectedKeywords);
+        used.add(option.toLowerCase());
+      }
+    }
+  });
+}
+
 function appendIfMissing(base: string, addition: string, keywords: string[]): string {
   if (!addition.trim()) return base;
   const lower = base.toLowerCase();
   const missing = keywords.some((keyword) => !lower.includes(keyword));
   if (!missing) return base;
   return `${base.trim()} ${addition.trim()}`.trim();
+}
+
+function buildPersonalizationSnippet(questionnaire: QuestionnaireData): string {
+  const schedule = `${questionnaire.availability.daysPerWeek} days/week, ${questionnaire.availability.sessionDuration} min`;
+  const fav = questionnaire.preferences.favouriteExercises[0];
+  const weak = questionnaire.experience.weakPoints[0];
+  const equipment = questionnaire.equipment.gymAccess ? 'gym-based' : 'home-based';
+  const cardio = questionnaire.preferences.cardioPreference;
+
+  const parts = [
+    `Built for your ${schedule} schedule`,
+    fav ? `includes ${fav}` : '',
+    weak ? `addresses ${weak}` : '',
+    `cardio preference: ${cardio}`,
+    `equipment: ${equipment}`
+  ].filter(Boolean);
+
+  return parts.slice(0, 3).join('; ') + '.';
 }
 
 function splitList(items: string[]): string[] {
@@ -520,14 +1058,14 @@ export function normalizePlan(
   ensureMandatoryExercises(plan, questionnaire, restricted, disliked, maxExercises);
   ensureTargetExercises(plan, targetList, restricted, disliked, maxExercises);
   includeFavouriteExercises(plan, favourites, restricted, maxExercises);
+  applySportSpecificStructure(plan, questionnaire, restricted, disliked, favourites, maxExercises);
+  ensureWeakPointExercises(plan, questionnaire, restricted, disliked, maxExercises);
+  ensureCardioFinishers(plan, questionnaire, restricted, disliked, maxExercises);
+  diversifyExercisesAcrossDays(plan, restricted, disliked, favourites);
   fillExercisesToExactCount(plan, questionnaire, restricted, disliked);
-  ensureMaxExercises(plan, maxExercises);
+  ensureMaxExercises(plan, maxExercises, [...favourites, ...targetList]);
 
-  const nutritionSummary = `Nutrition: ${questionnaire.nutrition.nutritionApproach}, protein ${questionnaire.nutrition.proteinIntake}.` +
-    (questionnaire.nutrition.dietaryRestrictions.length ? ` Restrictions: ${questionnaire.nutrition.dietaryRestrictions.join(', ')}.` : '') +
-    (questionnaire.nutrition.supplementUse.length ? ` Supplements: ${questionnaire.nutrition.supplementUse.join(', ')}.` : '');
-
-  plan.nutritionNotes = nutritionSummary;
+  plan.nutritionNotes = buildNutritionNotes(questionnaire);
 
   const recoverySummary = `Recovery: ${questionnaire.recovery.sleepHours}h sleep (${questionnaire.recovery.sleepQuality}), stress ${questionnaire.recovery.stressLevel.replace('_', ' ')}, recovery capacity ${questionnaire.recovery.recoveryCapacity}.`;
   plan.recoveryNotes = recoverySummary;
@@ -543,10 +1081,16 @@ export function normalizePlan(
     questionnaire.goals.primaryGoal.replace('_', ' '),
     questionnaire.goals.timeframe
   ]);
+  plan.overview = appendIfMissing(plan.overview, buildPersonalizationSnippet(questionnaire), [
+    'days/week',
+    'cardio'
+  ]);
 
   const preferredSplitLabel = getPreferredSplitLabel(questionnaire.preferences.preferredSplit);
   if (preferredSplitLabel) {
     plan.weeklyStructure = preferredSplitLabel;
+  } else if (isSportSpecific(questionnaire)) {
+    plan.weeklyStructure = `Sport-specific split (${plan.days.length} days: power, conditioning, mixed)`;
   } else {
     plan.weeklyStructure = recommendSplit(questionnaire);
   }
@@ -554,6 +1098,7 @@ export function normalizePlan(
   const design = buildProgramDesign(questionnaire);
   plan.progressionGuidance = `${design.progressionModel} ${design.deloadGuidance} Main lifts use ${design.mainRepRange} reps with ${design.restMain} rest; accessories use ${design.accessoryRepRange} reps with ${design.restAccessory} rest. ${design.recoveryModifier}`;
 
+  applyPreferredDayLabels(plan, questionnaire);
   reorderExercises(plan);
   applyProgramDesign(plan, questionnaire);
 
