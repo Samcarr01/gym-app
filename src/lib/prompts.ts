@@ -169,6 +169,7 @@ export function buildPrompt(
 - Experience level: ${questionnaire.experience.currentLevel}
 - Availability: ${questionnaire.availability.daysPerWeek} days/week, ${questionnaire.availability.sessionDuration} minutes/session
 - Preferred split: ${questionnaire.preferences.preferredSplit?.replace('_', ' ') || 'No preference'}
+- If no preferred split is provided, choose the best split using the training knowledge base and user goal/recovery/experience
 - Max exercises per session: ${questionnaire.constraints.maxExercisesPerSession || 'No limit'}
 - Favourite exercises (include): ${questionnaire.preferences.favouriteExercises.join(', ') || 'None'}
 - Disliked exercises (avoid): ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}

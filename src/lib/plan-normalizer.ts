@@ -209,6 +209,47 @@ function getPreferredSplitLabel(split: QuestionnaireData['preferences']['preferr
   }
 }
 
+export function recommendSplit(questionnaire: QuestionnaireData): string {
+  const preferred = getPreferredSplitLabel(questionnaire.preferences.preferredSplit);
+  if (preferred) return preferred;
+
+  const days = questionnaire.availability.daysPerWeek;
+  const recovery = questionnaire.recovery.recoveryCapacity;
+  const level = questionnaire.experience.currentLevel;
+  const goal = questionnaire.goals.primaryGoal;
+
+  if (days <= 2) {
+    return 'Full Body split (2 days)';
+  }
+
+  if (days === 3) {
+    return level === 'beginner' || recovery === 'low'
+      ? 'Full Body split (3 days)'
+      : 'Full Body split (3 days)';
+  }
+
+  if (days === 4) {
+    return 'Upper/Lower split (4 days)';
+  }
+
+  if (days === 5) {
+    if (recovery === 'high' && level !== 'beginner') {
+      return 'Push/Pull/Legs + Upper/Lower (5 days)';
+    }
+    return 'Upper/Lower split (4 days) + conditioning';
+  }
+
+  if (days >= 6) {
+    return recovery === 'high' ? 'Push/Pull/Legs (6 days)' : 'Upper/Lower split (4-5 days)';
+  }
+
+  if (goal === 'endurance' || goal === 'fat_loss') {
+    return 'Full Body + conditioning';
+  }
+
+  return 'Full Body split';
+}
+
 export function normalizePlan(
   plan: GeneratedPlan,
   questionnaire: QuestionnaireData
@@ -251,6 +292,8 @@ export function normalizePlan(
   const preferredSplitLabel = getPreferredSplitLabel(questionnaire.preferences.preferredSplit);
   if (preferredSplitLabel) {
     plan.weeklyStructure = preferredSplitLabel;
+  } else {
+    plan.weeklyStructure = recommendSplit(questionnaire);
   }
 
   return plan;
