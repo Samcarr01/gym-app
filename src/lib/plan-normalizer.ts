@@ -1,4 +1,5 @@
 import { GeneratedPlan, QuestionnaireData } from '@/lib/types';
+import { buildProgramDesign } from '@/lib/program-design';
 
 const INJURY_MOVEMENT_MAP: Record<string, string[]> = {
   'lower back': ['deadlift', 'bent over row', 'good morning', 'back squat', 'romanian deadlift'],
@@ -295,6 +296,9 @@ export function normalizePlan(
   } else {
     plan.weeklyStructure = recommendSplit(questionnaire);
   }
+
+  const design = buildProgramDesign(questionnaire);
+  plan.progressionGuidance = `${design.progressionModel} ${design.deloadGuidance}`;
 
   return plan;
 }

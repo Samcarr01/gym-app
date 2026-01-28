@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { QuestionnaireData, GeneratedPlan, GeneratedPlanSchema } from '@/lib/types';
 import { buildPrompt } from '@/lib/prompts';
 import { normalizePlan, recommendSplit } from '@/lib/plan-normalizer';
+import { buildProgramDesign } from '@/lib/program-design';
 
 const PLAN_JSON_SCHEMA = {
   type: 'object',
@@ -198,7 +199,8 @@ async function refinePlanIfNeeded(
     constraints: {
       maxExercisesPerSession: questionnaire.constraints.maxExercisesPerSession
     },
-    recommendedSplit: recommendSplit(questionnaire)
+    recommendedSplit: recommendSplit(questionnaire),
+    programDesign: buildProgramDesign(questionnaire)
   };
 
   const reviewPrompt = `

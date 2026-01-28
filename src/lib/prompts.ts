@@ -1,5 +1,6 @@
 import { QuestionnaireData, InjuryRecord } from '@/lib/types';
 import { getTrainingKnowledge } from '@/lib/training-knowledge';
+import { buildProgramDesign, programDesignToPrompt } from '@/lib/program-design';
 
 const SYSTEM_INSTRUCTIONS = `You are an expert strength and conditioning coach with 20+ years of experience.
 You create personalised training programmes that are:
@@ -154,6 +155,7 @@ export function buildPrompt(
   questionnaire: QuestionnaireData,
   existingPlan?: string
 ): { system: string; user: string } {
+  const programDesign = buildProgramDesign(questionnaire);
   let user = '';
 
   if (existingPlan) {
@@ -175,6 +177,11 @@ export function buildPrompt(
 - Disliked exercises (avoid): ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}
 - Recovery: ${questionnaire.recovery.sleepHours}h sleep (${questionnaire.recovery.sleepQuality}), stress ${questionnaire.recovery.stressLevel.replace('_', ' ')}, recovery capacity ${questionnaire.recovery.recoveryCapacity}
 - Nutrition: ${questionnaire.nutrition.nutritionApproach}, protein ${questionnaire.nutrition.proteinIntake}, restrictions ${questionnaire.nutrition.dietaryRestrictions.join(', ') || 'None'}
+`;
+
+  user += `
+## Program Design Blueprint (MUST FOLLOW)
+${programDesignToPrompt(programDesign)}
 `;
 
   user += `
