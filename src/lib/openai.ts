@@ -94,20 +94,6 @@ function getOpenAIClient() {
   });
 }
 
-function parseJsonFromContent(content: string): unknown {
-  try {
-    return JSON.parse(content);
-  } catch {
-    const start = content.indexOf('{');
-    const end = content.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-      const snippet = content.slice(start, end + 1);
-      return JSON.parse(snippet);
-    }
-    throw new Error('Invalid JSON in AI response');
-  }
-}
-
 export async function generatePlan(
   questionnaire: QuestionnaireData,
   existingPlan?: string
@@ -116,60 +102,46 @@ export async function generatePlan(
   const { system, user } = buildPrompt(questionnaire, existingPlan);
   const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
 
-  const response = await openai.chat.completions.create({
+  const response = await openai.responses.parse({
     model,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: user }
-    ],
-    response_format: {
-      type: 'json_schema',
-      json_schema: {
+    input: user,
+    instructions: system,
+    text: {
+      format: {
+        type: 'json_schema',
         name: 'workout_plan',
         strict: true,
         schema: PLAN_JSON_SCHEMA
       }
     },
     temperature: 0.2,
-    max_tokens: 2000
+    max_output_tokens: 2000
   });
 
-  const content = response.choices[0].message.content;
+  if (!response.output_parsed) {
+    console.error('AI response parse failed, retrying once');
+    const retry = await openai.responses.parse({
+      model,
+      input: user,
+      instructions: system,
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'workout_plan',
+          strict: true,
+          schema: PLAN_JSON_SCHEMA
+        }
+      },
+      temperature: 0.1,
+      max_output_tokens: 2000
+    });
 
-  if (!content) {
-    throw new Error('No content in response');
+    if (!retry.output_parsed) {
+      throw new Error('AI response parse failed');
+    }
+
+    return GeneratedPlanSchema.parse(retry.output_parsed);
   }
 
-  try {
-    const parsed = parseJsonFromContent(content);
-    return GeneratedPlanSchema.parse(parsed);
-  } catch (error) {
-    console.error('AI response parse failed, retrying once:', error);
-  }
-
-  const retry = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: user }
-    ],
-    response_format: {
-      type: 'json_schema',
-      json_schema: {
-        name: 'workout_plan',
-        strict: true,
-        schema: PLAN_JSON_SCHEMA
-      }
-    },
-    temperature: 0.2,
-    max_tokens: 2000
-  });
-
-  const retryContent = retry.choices[0].message.content;
-  if (!retryContent) {
-    throw new Error('No content in response (retry)');
-  }
-
-  const retryParsed = parseJsonFromContent(retryContent);
-  return GeneratedPlanSchema.parse(retryParsed);
+  return GeneratedPlanSchema.parse(response.output_parsed);
 }
