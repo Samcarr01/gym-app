@@ -161,6 +161,22 @@ export function buildPrompt(
   }
 
   user += `
+## Training Prescription (MUST FOLLOW)
+- Primary goal: ${questionnaire.goals.primaryGoal.replace('_', ' ')}
+- Secondary goal: ${questionnaire.goals.secondaryGoal?.replace('_', ' ') || 'None'}
+- Timeframe: ${questionnaire.goals.timeframe}
+- Specific targets: ${questionnaire.goals.specificTargets.join(', ') || 'None specified'}
+- Experience level: ${questionnaire.experience.currentLevel}
+- Availability: ${questionnaire.availability.daysPerWeek} days/week, ${questionnaire.availability.sessionDuration} minutes/session
+- Preferred split: ${questionnaire.preferences.preferredSplit?.replace('_', ' ') || 'No preference'}
+- Max exercises per session: ${questionnaire.constraints.maxExercisesPerSession || 'No limit'}
+- Favourite exercises (include): ${questionnaire.preferences.favouriteExercises.join(', ') || 'None'}
+- Disliked exercises (avoid): ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}
+- Recovery: ${questionnaire.recovery.sleepHours}h sleep (${questionnaire.recovery.sleepQuality}), stress ${questionnaire.recovery.stressLevel.replace('_', ' ')}, recovery capacity ${questionnaire.recovery.recoveryCapacity}
+- Nutrition: ${questionnaire.nutrition.nutritionApproach}, protein ${questionnaire.nutrition.proteinIntake}, restrictions ${questionnaire.nutrition.dietaryRestrictions.join(', ') || 'None'}
+`;
+
+  user += `
 ## User Profile
 
 ### Goals
@@ -215,8 +231,9 @@ ${formatInjuries(questionnaire.injuries)}
 
 Please generate a personalised workout plan based on this profile.`;
 
-  const system = TRAINING_KNOWLEDGE
-    ? `${SYSTEM_INSTRUCTIONS}\n\n=== TRAINING KNOWLEDGE BASE ===\n${TRAINING_KNOWLEDGE}`
+  const trainingKnowledge = getTrainingKnowledge(questionnaire);
+  const system = trainingKnowledge
+    ? `${SYSTEM_INSTRUCTIONS}\n\n=== TRAINING KNOWLEDGE BASE (SELECTED) ===\n${trainingKnowledge}`
     : SYSTEM_INSTRUCTIONS;
 
   return {

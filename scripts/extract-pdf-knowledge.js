@@ -129,17 +129,110 @@ async function main() {
     .join('\n\n')}\n\`;\n`;
 
   const helper = `
+import { QuestionnaireData } from '@/lib/types';
+
 function isPlaceholder(text: string): boolean {
   return text.includes('TODO: Paste') || text.includes('Leave this section empty');
 }
 
-export function getTrainingKnowledge(): string {
-  if (${combinedNames
+const GOAL_KEYWORDS: Record<string, string[]> = {
+  strength: ['strength', 'intensity', 'low reps', 'rest'],
+  muscle_building: ['hypertrophy', 'muscle', 'volume', 'progressive overload'],
+  fat_loss: ['fat loss', 'conditioning', 'energy balance', 'density'],
+  endurance: ['endurance', 'aerobic', 'work capacity', 'conditioning'],
+  general_fitness: ['general fitness', 'balance', 'full body'],
+  sport_specific: ['sport', 'performance', 'power', 'speed']
+};
+
+function normalizeKeyword(value: string): string {
+  return value.replace(/_/g, ' ').toLowerCase();
+}
+
+function collectKeywords(questionnaire: QuestionnaireData): string[] {
+  const keywords: string[] = [];
+  keywords.push(normalizeKeyword(questionnaire.goals.primaryGoal));
+  if (questionnaire.goals.secondaryGoal) {
+    keywords.push(normalizeKeyword(questionnaire.goals.secondaryGoal));
+  }
+  keywords.push(questionnaire.goals.timeframe.toLowerCase());
+  keywords.push(...questionnaire.goals.specificTargets);
+  keywords.push(questionnaire.experience.currentLevel);
+  keywords.push(questionnaire.preferences.cardioPreference);
+  if (questionnaire.preferences.preferredSplit) {
+    keywords.push(normalizeKeyword(questionnaire.preferences.preferredSplit));
+  }
+  keywords.push(...questionnaire.preferences.favouriteExercises);
+  keywords.push(...questionnaire.preferences.dislikedExercises);
+  keywords.push(...questionnaire.equipment.availableEquipment);
+  keywords.push(...questionnaire.equipment.limitedEquipment);
+  keywords.push(...questionnaire.injuries.movementRestrictions);
+  keywords.push(...questionnaire.injuries.painAreas);
+  keywords.push(...questionnaire.nutrition.dietaryRestrictions);
+  keywords.push(...questionnaire.nutrition.supplementUse);
+  keywords.push(questionnaire.nutrition.nutritionApproach);
+  keywords.push(questionnaire.nutrition.proteinIntake);
+  keywords.push(questionnaire.recovery.sleepQuality);
+  keywords.push(questionnaire.recovery.stressLevel.replace('_', ' '));
+  keywords.push(questionnaire.recovery.recoveryCapacity);
+
+  const goalWords = GOAL_KEYWORDS[questionnaire.goals.primaryGoal] || [];
+  keywords.push(...goalWords);
+
+  return Array.from(new Set(keywords.map((value) => value.toLowerCase()).filter(Boolean)));
+}
+
+function scoreParagraph(paragraph: string, keywords: string[]): number {
+  const lower = paragraph.toLowerCase();
+  let score = 0;
+  for (const keyword of keywords) {
+    if (keyword.length < 3) continue;
+    if (lower.includes(keyword)) score += 1;
+  }
+  return score;
+}
+
+function selectRelevantParagraphs(text: string, keywords: string[], maxChars: number): string {
+  const paragraphs = text
+    .split(/\\n\\s*\\n/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 80);
+
+  const ranked = paragraphs
+    .map((p) => ({ p, score: scoreParagraph(p, keywords) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const chosen: string[] = [];
+  let total = 0;
+  for (const item of ranked) {
+    if (total + item.p.length + 2 > maxChars) continue;
+    chosen.push(item.p);
+    total += item.p.length + 2;
+    if (total >= maxChars) break;
+  }
+
+  if (chosen.length === 0) {
+    return text.slice(0, Math.min(text.length, maxChars));
+  }
+
+  return chosen.join('\\n\\n');
+}
+
+export function getTrainingKnowledge(questionnaire?: QuestionnaireData): string {
+  const allPlaceholders = ${combinedNames
     .map((name) => `isPlaceholder(${name})`)
-    .join(' && ')}) {
+    .join(' && ')};
+  if (allPlaceholders) {
     return '';
   }
-  return COMBINED_TRAINING_KNOWLEDGE.trim();
+
+  if (!questionnaire) {
+    return COMBINED_TRAINING_KNOWLEDGE.trim();
+  }
+
+  const keywords = collectKeywords(questionnaire);
+  const selected = selectRelevantParagraphs(COMBINED_TRAINING_KNOWLEDGE, keywords, 6500);
+  return selected.trim();
 }
 `;
 
