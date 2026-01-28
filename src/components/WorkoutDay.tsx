@@ -71,8 +71,14 @@ export function WorkoutDay({ day }: WorkoutDayProps) {
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p>⏱️ Rest: {exercise.rest}</p>
                   <p className="italic">"{exercise.intent}"</p>
+                  {exercise.rationale && exercise.rationale !== exercise.intent && (
+                    <p className="text-primary/90">🎯 {exercise.rationale}</p>
+                  )}
                   {exercise.notes && (
                     <p className="text-primary/80">💡 {exercise.notes}</p>
+                  )}
+                  {exercise.progressionNote && (
+                    <p className="text-emerald-600 dark:text-emerald-400">📈 {exercise.progressionNote}</p>
                   )}
                 </div>
                 {exercise.substitutions.length > 0 && (

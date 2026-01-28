@@ -1,55 +1,142 @@
 import { QuestionnaireData, InjuryRecord } from '@/lib/types';
-import { getTrainingKnowledge } from '@/lib/training-knowledge';
+import { getTrainingKnowledge, getDirectCFOSReferences } from '@/lib/training-knowledge';
 import { buildProgramDesign, programDesignToPrompt } from '@/lib/program-design';
+import {
+  synthesizeRecoveryProfile,
+  analyzeConstraints,
+  mapWeakPointsToExercises,
+  createTrainingNarrative,
+  calculateMaxSetsPerWeek,
+} from '@/lib/context-enrichment';
+import {
+  generateNutritionStrategy,
+  recommendSupplements,
+  createMealTimingGuidance,
+  estimateTrainingIntensity,
+} from '@/lib/nutrition-integration';
+import { detectSport, getSportGuidance } from '@/lib/sport-specific';
 
-const SYSTEM_INSTRUCTIONS = `You are an expert strength and conditioning coach with 20+ years of experience.
-You create personalised training programmes that are:
+const SYSTEM_INSTRUCTIONS = `You are an expert strength & conditioning coach with 20+ years of experience creating highly personalized training programs.
 
-1. SAFE – Never prescribe exercises that conflict with stated injuries
-2. EFFECTIVE – Based on proven training principles
-3. ADHERENT – Designed around the user's actual schedule and equipment
-4. PROGRESSIVE – Include clear progression guidance
+## Core Philosophy
 
-Your tone is calm, professional, and encouraging. You explain the "why" behind each recommendation without being preachy.
+PERSONALIZATION MEANS:
+- Every exercise choice has a "why" based on the user's specific situation
+- Volume, intensity, and frequency are justified by recovery capacity, not just experience level
+- Plan overview reads like a coaching conversation, not a template
+- Weak points, injuries, and preferences drive exercise selection, not generic recommendations
+- Trade-offs are explicitly acknowledged (e.g., "keeping volume low due to poor sleep")
 
-CRITICAL RULES:
+## Your Coaching Approach
+
+1. **SYNTHESIZE FIRST**: Don't just dump data. Connect dots:
+   - Link sleep quality + stress level → recovery capacity → volume targets
+   - Map weak points + injuries → exercise prioritization
+   - Combine goals + timeframe + nutrition → realistic expectations
+
+2. **EXPLAIN YOUR REASONING**: In the overview and progressionGuidance:
+   - WHY this split for this person (not just "4 days = upper/lower")
+   - WHY these volume targets (reference sleep, stress, training history)
+   - WHY these specific exercises (weak points, equipment, preferences)
+   - WHAT trade-offs you made (e.g., prioritizing recovery over max volume)
+
+3. **USE KNOWLEDGE BASE DEEPLY**: Reference specific CFOS principles:
+   - Cite volume landmarks (MEV, MAV, MRV) for their experience level
+   - Explain periodization model choice (why linear vs undulating for them)
+   - Reference specific recovery protocols from research compendium
+
+4. **ADAPT TO CONTEXT**: Different people need different things:
+   - Beginner: More coaching on form, simpler progression
+   - Intermediate: More exercise variety, periodization introduction
+   - Advanced: Sophisticated programming, weak point targeting
+   - Injured: Conservative loading, movement substitutions with rationale
+   - Time-crunched: Efficiency focus, compound movements prioritized
+   - Well-recovered: Can handle higher volume, more frequency
+
+## Output Guidelines
+
+- **planName**: Specific to their goal + context (not "4-Day Muscle Building")
+  Example: "Hypertrophy-Focused Upper/Lower for Intermediate with Lower Back Management"
+
+- **overview**: 3-4 paragraphs of coaching insight:
+  1. Acknowledge their situation (goals, experience, constraints)
+  2. Explain programming decisions (split, volume, frequency) with reasoning
+  3. Address specific needs (injuries, weak points, recovery)
+  4. Set expectations (what they'll gain, realistic timeline)
+
+- **weeklyStructure**: Justify the structure with data:
+  Example: "4-day upper/lower split. Your 7 hours sleep + moderate stress support 14 sets/muscle/week, split across 2 sessions for optimal protein synthesis without overreaching."
+
+- **exercises**: Each exercise requires:
+  * **intent**: What muscle/movement pattern it targets
+  * **rationale**: WHY this exercise for THIS specific user
+    - Reference their weak points, injuries, equipment, or preferences
+    - Explain substitutions (e.g., "Using DB press instead of barbell due to shoulder injury")
+    - Note if it's a favorite exercise maintained for adherence
+  * **progressionNote**: How THIS user should progress THIS movement
+    - Beginner: "Add 2.5kg each session when all sets hit top of rep range"
+    - Intermediate: "Wave load: 60kg week 1, 62.5kg week 2, 65kg week 3, deload week 4"
+    - Advanced: "Autoregulate based on RPE, stay 1-2 reps from failure"
+
+- **progressionGuidance**: Specific to their level + recovery:
+  - Beginner: "Add 2.5kg each session, deload at week 6 or when form breaks down"
+  - Intermediate: "Wave load across 4 weeks (light/medium/heavy), deload week 5"
+  - Advanced: "Block periodization: 4 weeks hypertrophy emphasis, 3 weeks strength, monitor HRV for autoregulation"
+
+- **nutritionNotes**: Create an integrated nutrition strategy that directly supports the training plan:
+  - Reference the specific training/rest day split (e.g., "Your 4 training days need X calories, 3 rest days need Y")
+  - Provide concrete macronutrient targets based on their approach and protein intake
+  - Include meal timing specific to their training schedule (morning/afternoon/evening)
+  - Acknowledge current supplement use and recommend evidence-based additions where appropriate
+  - Explain WHY the nutrition strategy matches their goal (e.g., "Higher carbs on training days support your 5x/week strength work")
+  - You will receive pre-computed nutrition integration data - USE IT to inform this section
+
+- **recoveryNotes**: Personalized to sleep/stress data:
+  - Poor sleep: "Emphasize active recovery, limit volume to lower end of range, prioritize sleep hygiene over training volume"
+  - High stress: "Add extra rest day if fatigue accumulates, consider meditation or 20-min walks on off days"
+  - Good recovery: "Can handle higher frequency, add optional conditioning 1-2x/week if desired"
+
+## Exercise Selection Requirements
+
+EVERY exercise must include:
+1. **intent**: What muscle/movement pattern it targets
+2. **rationale**: WHY this exercise for THIS specific user
+   - Reference their weak points, injuries, equipment, or preferences
+   - Explain substitutions (e.g., "Using DB press instead of barbell due to shoulder injury")
+   - Note if it's a favorite exercise maintained for adherence
+3. **progressionNote**: How THIS user should progress THIS movement
+   - Beginner: "Add 2.5kg each session when you can complete all sets at top of rep range"
+   - Intermediate: "Wave load: 60kg week 1, 62.5kg week 2, 65kg week 3, deload week 4"
+   - Advanced: "Autoregulate based on RPE, stay 1-2 reps from failure, add load when RPE drops"
+
+EXAMPLES OF GOOD RATIONALE:
+- "Targeting your weak upper back strength mentioned in questionnaire"
+- "Cable variation chosen over barbell due to limited home gym equipment"
+- "Maintained as a favorite exercise to support adherence"
+- "Substitute for barbell bench press due to shoulder impingement history"
+- "Added to address desk worker hip tightness and lower back stiffness"
+
+## Critical Safety Rules
+
 - If an injury is marked HIGH severity, completely avoid that movement pattern
-- If equipment is limited, substitute with available alternatives
+- If equipment is limited, substitute with available alternatives and explain why
 - Always include warm-up and cool-down guidance
-- Default to conservative volume for beginners
-- Include rest day recommendations
-- Keep the plan concise: limit exercises per day to 5 unless a max is specified
-- Keep text brief: 1 sentence per description/intent/notes
+- Default to conservative volume for beginners and those with poor recovery
 - If maxExercisesPerSession is provided, do not exceed it
-- MUST use the questionnaire data: incorporate goals, timeframe, specific targets, recovery, nutrition, and preferences
-- If favourite exercises are provided, include them unless they conflict with injuries or equipment
-- If disliked exercises are provided, avoid them
-- If the goal is sport-specific or a sport is mentioned, structure the week with power/strength, conditioning/engine, and mixed days
-- Avoid repeating the exact same main lift every day; rotate variations when possible
-- Nutrition notes must include calorie guidance plus simple meal timing/snack guidance
-- The overview must mention at least 2 specific user details (schedule, equipment, cardio preference, weak points, favourite exercises)
-
-QUALITY CHECKLIST (REQUIRED):
-- The plan clearly reflects the user's primary goal and timeframe
-- Specific targets are addressed directly in the plan
-- Recovery notes match sleep/stress/recovery capacity responses
-- Nutrition notes match the user's nutrition approach and protein intake
-- Favourite exercises appear where safe and appropriate
-- Disliked exercises are excluded
-- Availability (days/week, session duration) is respected
-- Exercise selection varies across days (no copy/paste days)
-- Overview includes 2+ personalized details from the questionnaire
+- Favourite exercises should be included unless they conflict with injuries
+- Disliked exercises must be avoided
+- If sport-specific goal, include power/strength, conditioning, and skill-specific work
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object matching this exact structure:
 {
-  "planName": "string - descriptive name for this plan",
-  "overview": "string - 2-3 sentence summary",
-  "weeklyStructure": "string - e.g., 'Push/Pull/Legs with 2 rest days'",
+  "planName": "string - descriptive name specific to user context",
+  "overview": "string - 3-4 paragraph coaching narrative",
+  "weeklyStructure": "string - justified structure with reasoning",
   "days": [
     {
       "dayNumber": number,
-      "name": "string - e.g., 'Push Day'",
+      "name": "string - e.g., 'Upper Strength'",
       "focus": "string - muscle groups targeted",
       "duration": "string - estimated time",
       "warmup": {
@@ -60,11 +147,13 @@ You must respond with a valid JSON object matching this exact structure:
         {
           "name": "string",
           "sets": number,
-          "reps": "string - e.g., '8-12' or '5x5'",
+          "reps": "string - e.g., '8-12' or '5'",
           "rest": "string - e.g., '90 seconds'",
-          "intent": "string - why this exercise",
-          "notes": "string - form cues or variations",
-          "substitutions": ["string array - alternative exercises"]
+          "intent": "string - what it targets",
+          "rationale": "string - WHY for THIS user",
+          "notes": "string - form cues",
+          "substitutions": ["string array"],
+          "progressionNote": "string - HOW to progress"
         }
       ],
       "cooldown": {
@@ -73,9 +162,9 @@ You must respond with a valid JSON object matching this exact structure:
       }
     }
   ],
-  "progressionGuidance": "string - how to progress over time",
-  "nutritionNotes": "string - brief dietary suggestions",
-  "recoveryNotes": "string - rest and recovery advice",
+  "progressionGuidance": "string - personalized progression strategy",
+  "nutritionNotes": "string - training-integrated nutrition advice",
+  "recoveryNotes": "string - recovery strategy based on user data",
   "disclaimer": "Consult a healthcare professional before starting any exercise program."
 }`;
 
@@ -162,10 +251,152 @@ export function buildPrompt(
   existingPlan?: string
 ): { system: string; user: string } {
   const programDesign = buildProgramDesign(questionnaire);
+
+  // Generate context synthesis
+  const recoveryProfile = synthesizeRecoveryProfile(
+    questionnaire.recovery,
+    questionnaire.availability
+  );
+  const constraints = analyzeConstraints(questionnaire);
+  const weakPointMap = mapWeakPointsToExercises(
+    questionnaire.experience.weakPoints,
+    questionnaire.equipment.availableEquipment
+  );
+  const narrative = createTrainingNarrative(questionnaire);
+  const maxSets = calculateMaxSetsPerWeek(
+    recoveryProfile,
+    questionnaire.experience.currentLevel
+  );
+
   let user = '';
 
   if (existingPlan) {
     user = UPDATE_MODE_PROMPT.replace('{existingPlanText}', existingPlan);
+  }
+
+  // COACHING SYNTHESIS - Pre-analyzed insights for AI
+  user += `
+## COACHING BRIEF (Use this to personalize deeply)
+
+${narrative}
+
+### Recovery Profile Analysis
+${recoveryProfile.notes}
+- **Recovery Capacity**: ${recoveryProfile.capacity}
+- **Volume Modifier**: ${(recoveryProfile.volumeModifier * 100).toFixed(0)}% of baseline
+- **Recommended Max Sets/Muscle/Week**: ~${maxSets} sets (adjusted for your recovery capacity and ${questionnaire.experience.currentLevel} level)
+
+### Primary Constraint
+**${constraints.primary.toUpperCase()}**: ${constraints.impact}
+
+### Weak Point Priorities
+${
+  Object.keys(weakPointMap).length > 0
+    ? Object.entries(weakPointMap)
+        .map(
+          ([point, data]) =>
+            `- **${point}** (${data.priority} priority): Consider ${data.exercises.join(', ')}`
+        )
+        .join('\n')
+    : 'No specific weak points identified.'
+}
+
+### Key User Preferences
+- **Favorite exercises to include**: ${questionnaire.preferences.favouriteExercises.join(', ') || 'None specified'}
+- **Exercises to avoid**: ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}
+- **Preferred split**: ${questionnaire.preferences.preferredSplit?.replace('_', ' ') || 'Choose best based on goals and recovery'}
+- **Cardio preference**: ${questionnaire.preferences.cardioPreference}
+
+### Performance Context
+${
+  questionnaire.experience.currentLifts &&
+  (questionnaire.experience.currentLifts.squat ||
+    questionnaire.experience.currentLifts.bench ||
+    questionnaire.experience.currentLifts.deadlift)
+    ? `**Current working weights provided:**
+- Squat: ${questionnaire.experience.currentLifts.squat || 'N/A'}kg
+- Bench Press: ${questionnaire.experience.currentLifts.bench || 'N/A'}kg
+- Deadlift: ${questionnaire.experience.currentLifts.deadlift || 'N/A'}kg
+- Overhead Press: ${questionnaire.experience.currentLifts.overheadPress || 'N/A'}kg
+
+**IMPORTANT**: Use these numbers to set realistic starting weights and progression targets. For example, if their bench is 70kg, start the program at 60-62.5kg (85-90%) and show specific week-by-week progression back to and beyond 70kg.`
+    : 'No current lifts provided - use general progression guidance based on experience level.'
+}
+
+${
+  questionnaire.experience.trainingConsistency === 'returning' ||
+  questionnaire.experience.trainingConsistency === 'inconsistent'
+    ? `**Training Consistency Note**: User is ${questionnaire.experience.trainingConsistency} - start with lower volume (closer to MEV) and build up gradually. They may experience rapid "muscle memory" gains but need to avoid doing too much too soon.`
+    : ''
+}
+
+`;
+
+  // CFOS Evidence-Based Recommendations
+  const cfosRefs = getDirectCFOSReferences(questionnaire);
+  user += `
+## CFOS Evidence-Based Recommendations for This User
+${cfosRefs}
+
+`;
+
+  // Nutrition Integration
+  const trainingIntensity = estimateTrainingIntensity(questionnaire);
+  const nutritionStrategy = generateNutritionStrategy(
+    questionnaire.goals.primaryGoal,
+    questionnaire.nutrition.nutritionApproach,
+    questionnaire.nutrition.proteinIntake,
+    questionnaire.availability.daysPerWeek,
+    questionnaire.experience.currentBodyWeight
+  );
+  const supplementRecs = recommendSupplements(
+    questionnaire.goals,
+    questionnaire.nutrition.supplementUse,
+    questionnaire.nutrition.dietaryRestrictions,
+    trainingIntensity
+  );
+  const mealTiming = createMealTimingGuidance(
+    questionnaire.availability.timeOfDay,
+    questionnaire.availability.sessionDuration,
+    questionnaire.goals.primaryGoal
+  );
+
+  user += `
+## Nutrition Integration (Use this to inform nutritionNotes section)
+
+### Training-Specific Nutrition Strategy
+This plan includes ${questionnaire.availability.daysPerWeek} training days and ${7 - questionnaire.availability.daysPerWeek} rest days per week.
+
+**Calorie Targets:**
+- Training days: ${nutritionStrategy.trainingDayCalories}
+- Rest days: ${nutritionStrategy.restDayCalories}
+
+**Macronutrient Targets:**
+- Protein: ${nutritionStrategy.proteinTarget}
+- Carbohydrates: ${nutritionStrategy.carbTarget}
+- Fats: ${nutritionStrategy.fatTarget}
+
+**Strategy Notes:**
+${nutritionStrategy.notes}
+
+### Supplement Recommendations
+${supplementRecs}
+
+### Meal Timing Guidance
+${mealTiming}
+
+**IMPORTANT:** Integrate this nutrition information into your nutritionNotes section. Don't just copy-paste - synthesize it into coaching advice that connects to their training schedule and goals.
+
+`;
+
+  // Sport-Specific Guidance
+  const detectedSport = detectSport(questionnaire);
+  if (detectedSport) {
+    const sportGuidance = getSportGuidance(detectedSport);
+    user += `
+${sportGuidance}
+
+`;
   }
 
   user += `
@@ -176,33 +407,37 @@ export function buildPrompt(
 - Specific targets: ${questionnaire.goals.specificTargets.join(', ') || 'None specified'}
 - Experience level: ${questionnaire.experience.currentLevel}
 - Availability: ${questionnaire.availability.daysPerWeek} days/week, ${questionnaire.availability.sessionDuration} minutes/session
-- Preferred split: ${questionnaire.preferences.preferredSplit?.replace('_', ' ') || 'No preference'}
-- If no preferred split is provided, choose the best split using the training knowledge base and user goal/recovery/experience
-- If sport-specific is selected or sport is mentioned, include power/strength, conditioning, and mixed days
-- Max exercises per session: ${questionnaire.constraints.maxExercisesPerSession || 'No limit'}
-- Favourite exercises (include): ${questionnaire.preferences.favouriteExercises.join(', ') || 'None'}
-- Disliked exercises (avoid): ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}
-- Recovery: ${questionnaire.recovery.sleepHours}h sleep (${questionnaire.recovery.sleepQuality}), stress ${questionnaire.recovery.stressLevel.replace('_', ' ')}, recovery capacity ${questionnaire.recovery.recoveryCapacity}
-- Nutrition: ${questionnaire.nutrition.nutritionApproach}, protein ${questionnaire.nutrition.proteinIntake}, restrictions ${questionnaire.nutrition.dietaryRestrictions.join(', ') || 'None'}
-`;
+- Time of day: ${questionnaire.availability.timeOfDay}
+- Max exercises per session: ${questionnaire.constraints.maxExercisesPerSession || 'No limit (keep ~5 unless specified)'}
 
-  user += `
 ## Program Design Blueprint (MUST FOLLOW)
 ${programDesignToPrompt(programDesign)}
+
 `;
 
   user += `
-## User Profile
+## Complete User Profile (Raw Data)
 
 ### Goals
 - Primary: ${questionnaire.goals.primaryGoal.replace('_', ' ')}
 - Secondary: ${questionnaire.goals.secondaryGoal?.replace('_', ' ') || 'None'}
 - Timeframe: ${questionnaire.goals.timeframe}
-- Specific targets: ${questionnaire.goals.specificTargets.join(', ') || 'None specified'}
+- Specific targets: ${questionnaire.goals.specificTargets.join(', ') || 'None specified'}${
+  questionnaire.goals.sportDetails?.sportName
+    ? `\n- Sport: ${questionnaire.goals.sportDetails.sportName} (${questionnaire.goals.sportDetails.currentPhase?.replace('-', ' ') || 'no specific phase'})`
+    : ''
+}
 
 ### Experience
 - Training years: ${questionnaire.experience.trainingYears}
 - Level: ${questionnaire.experience.currentLevel}
+- Training consistency: ${questionnaire.experience.trainingConsistency.replace('_', ' ')}
+- Current body weight: ${questionnaire.experience.currentBodyWeight ? `${questionnaire.experience.currentBodyWeight}kg` : 'Not specified'}
+- Current lifts: ${
+  questionnaire.experience.currentLifts
+    ? `Squat: ${questionnaire.experience.currentLifts.squat || 'N/A'}kg, Bench: ${questionnaire.experience.currentLifts.bench || 'N/A'}kg, Deadlift: ${questionnaire.experience.currentLifts.deadlift || 'N/A'}kg, OHP: ${questionnaire.experience.currentLifts.overheadPress || 'N/A'}kg`
+    : 'Not specified'
+}
 - Recent training: ${questionnaire.experience.recentTraining || 'Not specified'}
 - Strong points: ${questionnaire.experience.strongPoints.join(', ') || 'Not specified'}
 - Weak points: ${questionnaire.experience.weakPoints.join(', ') || 'Not specified'}
@@ -233,18 +468,13 @@ ${formatInjuries(questionnaire.injuries)}
 - Dietary restrictions: ${questionnaire.nutrition.dietaryRestrictions.join(', ') || 'None'}
 - Supplements: ${questionnaire.nutrition.supplementUse.join(', ') || 'None'}
 
-### Preferences
-- Favourite exercises: ${questionnaire.preferences.favouriteExercises.join(', ') || 'None specified'}
-- Exercises to avoid: ${questionnaire.preferences.dislikedExercises.join(', ') || 'None'}
-- Preferred split: ${questionnaire.preferences.preferredSplit?.replace('_', ' ') || 'No preference'}
-- Cardio preference: ${questionnaire.preferences.cardioPreference}
-
 ### Additional Constraints
-- Max exercises per session: ${questionnaire.constraints.maxExercisesPerSession || 'No limit'}
 - Time constraints: ${questionnaire.constraints.timeConstraints || 'None'}
 - Other notes: ${questionnaire.constraints.otherNotes || 'None'}
 
-Please generate a personalised workout plan based on this profile.`;
+---
+
+Using all of the above context, generate a deeply personalized workout plan that demonstrates you understand THIS specific person's situation, constraints, and goals. Make every section feel like coaching advice, not a template.`;
 
   const trainingKnowledge = getTrainingKnowledge(questionnaire);
   const system = trainingKnowledge

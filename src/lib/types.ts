@@ -23,7 +23,11 @@ export const GoalsSectionSchema = z.object({
     'sport_specific'
   ]).nullable().optional(),
   timeframe: z.string().min(1, 'Please select a timeframe'),
-  specificTargets: z.array(z.string()).default([])
+  specificTargets: z.array(z.string()).default([]),
+  sportDetails: z.object({
+    sportName: z.string().default(''),
+    currentPhase: z.enum(['off-season', 'pre-season', 'in-season', 'post-season', 'not-applicable']).optional()
+  }).optional()
 });
 
 // Experience Section
@@ -32,7 +36,20 @@ export const ExperienceSectionSchema = z.object({
   currentLevel: z.enum(['beginner', 'intermediate', 'advanced']),
   recentTraining: z.string().default(''),
   strongPoints: z.array(z.string()).default([]),
-  weakPoints: z.array(z.string()).default([])
+  weakPoints: z.array(z.string()).default([]),
+  trainingConsistency: z.enum([
+    'very_consistent', // Rarely miss sessions
+    'mostly_consistent', // Occasional breaks
+    'inconsistent', // Frequent breaks
+    'returning' // Long break, rebuilding
+  ]).default('mostly_consistent'),
+  currentBodyWeight: z.number().min(30).max(300).optional(), // kg
+  currentLifts: z.object({
+    squat: z.number().optional(),
+    bench: z.number().optional(),
+    deadlift: z.number().optional(),
+    overheadPress: z.number().optional()
+  }).optional()
 });
 
 // Availability Section
@@ -55,6 +72,12 @@ export const EquipmentSectionSchema = z.object({
 export const InjuryRecordSchema = z.object({
   area: z.string().min(1),
   severity: z.enum(['low', 'medium', 'high']),
+  status: z.enum([
+    'acute', // Recent, still painful
+    'chronic', // Long-term management
+    'healing', // Recovering, some restrictions
+    'history' // Past injury, being cautious
+  ]).default('chronic'),
   notes: z.string().default('')
 });
 
@@ -136,8 +159,10 @@ export const ExerciseSchema = z.object({
   reps: z.string(),
   rest: z.string(),
   intent: z.string(),
+  rationale: z.string(), // NEW: Specific reasoning for THIS user
   notes: z.string(),
-  substitutions: z.array(z.string())
+  substitutions: z.array(z.string()),
+  progressionNote: z.string().optional() // NEW: How to progress THIS movement
 });
 
 export const WorkoutDaySchema = z.object({
@@ -259,14 +284,18 @@ export const DEFAULT_QUESTIONNAIRE: QuestionnaireData = {
     primaryGoal: 'general_fitness',
     secondaryGoal: null,
     timeframe: '3 months',
-    specificTargets: []
+    specificTargets: [],
+    sportDetails: undefined
   },
   experience: {
     trainingYears: 0,
     currentLevel: 'beginner',
     recentTraining: '',
     strongPoints: [],
-    weakPoints: []
+    weakPoints: [],
+    trainingConsistency: 'mostly_consistent',
+    currentBodyWeight: undefined,
+    currentLifts: undefined
   },
   availability: {
     daysPerWeek: 3,

@@ -417,8 +417,10 @@ function fillExercisesToExactCount(
         reps: day.exercises[0]?.reps ?? '8-12',
         rest: day.exercises[0]?.rest ?? '90 seconds',
         intent: 'Accessory work to round out the session.',
+        rationale: 'Added to complete the workout and increase training volume.',
         notes: 'Use a controlled tempo and focus on form.',
-        substitutions: []
+        substitutions: [],
+        progressionNote: 'Add weight when all sets feel easy with good form.'
       });
       globalUsed.add(name.toLowerCase());
     }
@@ -499,8 +501,10 @@ function ensureMandatoryExercises(
       reps: template?.reps ?? '6-10',
       rest: template?.rest ?? '90 seconds',
       intent: 'Core lift selected to match your goals and targets.',
+      rationale: `Selected as a core compound movement to align with your ${item.focus} training focus.`,
       notes: template?.notes ?? 'Use controlled form and progressive overload.',
-      substitutions: template?.substitutions ?? []
+      substitutions: template?.substitutions ?? [],
+      progressionNote: template?.progressionNote ?? 'Add weight when you can complete all sets with good form.'
     };
 
     if (maxExercises && day.exercises.length >= maxExercises) {
@@ -540,8 +544,10 @@ function ensureTargetExercises(
       reps: template?.reps ?? '6-10',
       rest: template?.rest ?? '90 seconds',
       intent: 'Included to directly address your stated targets.',
+      rationale: `Specifically chosen to target ${target.name} as mentioned in your specific goals.`,
       notes: template?.notes ?? 'Use a controlled tempo and focus on form.',
-      substitutions: template?.substitutions ?? []
+      substitutions: template?.substitutions ?? [],
+      progressionNote: template?.progressionNote ?? 'Progress gradually as strength improves.'
     };
 
     if (maxExercises && day.exercises.length >= maxExercises) {
@@ -622,8 +628,10 @@ function includeFavouriteExercises(
       reps: template?.reps ?? '8-12',
       rest: template?.rest ?? '90 seconds',
       intent: 'Included because it is one of your favourite exercises.',
+      rationale: 'Maintained as a favorite exercise to support adherence and enjoyment.',
       notes: template?.notes ?? 'Adjust load and form to your comfort and equipment.',
-      substitutions: template?.substitutions ?? []
+      substitutions: template?.substitutions ?? [],
+      progressionNote: template?.progressionNote ?? 'Progress at your own pace while maintaining good form.'
     };
 
     if (maxExercises && day.exercises.length >= maxExercises) {
@@ -752,8 +760,10 @@ function buildSportExercise(
     reps,
     rest,
     intent,
+    rationale: intent, // Fallback: use intent as rationale if not provided by AI
     notes,
-    substitutions: []
+    substitutions: [],
+    progressionNote: 'Progress when exercise feels easier and form is solid'
   };
 }
 
@@ -829,8 +839,10 @@ function ensureWeakPointExercises(
       reps: template?.reps ?? '8-12',
       rest: template?.rest ?? '60-90 sec',
       intent: 'Included to address a stated weak point.',
+      rationale: 'Specifically targeting your identified weak point for balanced development.',
       notes: template?.notes ?? 'Use a controlled tempo and full range of motion.',
-      substitutions: []
+      substitutions: [],
+      progressionNote: template?.progressionNote ?? 'Progress gradually, focusing on quality over quantity.'
     };
 
     replaceOrAppendExercise(day, exercise, maxExercises, protectedKeywords);

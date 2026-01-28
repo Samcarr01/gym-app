@@ -735,7 +735,131 @@ export function getTrainingKnowledge(questionnaire?: QuestionnaireData): string 
   }
 
   const keywords = collectKeywords(questionnaire);
-  const selected = selectRelevantParagraphs(COMBINED_TRAINING_KNOWLEDGE, keywords, 6500);
+  const selected = selectRelevantParagraphs(COMBINED_TRAINING_KNOWLEDGE, keywords, 10000);
   return selected.trim();
+}
+
+/**
+ * Extract direct, specific CFOS recommendations for this user
+ */
+export function getDirectCFOSReferences(questionnaire: QuestionnaireData): string {
+  const { goals, experience, recovery } = questionnaire;
+  const level = experience.currentLevel;
+  const primaryGoal = goals.primaryGoal;
+
+  let references = '';
+
+  // Volume landmarks by level
+  if (level === 'beginner') {
+    references += `**Volume Landmarks (Beginner):**
+- MEV (Minimum Effective Volume): ~6-8 sets/muscle/week
+- MAV (Maximum Adaptive Volume): ~10-12 sets/muscle/week
+- MRV (Maximum Recoverable Volume): ~12-15 sets/muscle/week
+- CFOS recommendation: Start at 8-10 sets and progress gradually
+
+`;
+  } else if (level === 'intermediate') {
+    references += `**Volume Landmarks (Intermediate):**
+- MEV (Minimum Effective Volume): ~8-10 sets/muscle/week
+- MAV (Maximum Adaptive Volume): ~12-16 sets/muscle/week
+- MRV (Maximum Recoverable Volume): ~16-20 sets/muscle/week
+- CFOS recommendation: Operate in the 12-16 set range for sustained growth
+
+`;
+  } else {
+    references += `**Volume Landmarks (Advanced):**
+- MEV (Minimum Effective Volume): ~10-12 sets/muscle/week
+- MAV (Maximum Adaptive Volume): ~16-20 sets/muscle/week
+- MRV (Maximum Recoverable Volume): ~20-28 sets/muscle/week
+- CFOS recommendation: High-quality volume with excellent recovery management required
+
+`;
+  }
+
+  // Progression model by level
+  if (level === 'beginner') {
+    references += `**Recommended Progression Model (Beginner):**
+Linear progression is ideal. Add small load increments (2.5kg for upper body, 5kg for lower body) or reps each session. When progress stalls, reduce load by 10% and rebuild. Deload every 6-8 weeks or when form deteriorates.
+
+`;
+  } else if (level === 'intermediate') {
+    references += `**Recommended Progression Model (Intermediate):**
+Daily Undulating Periodization (DUP) works well. Vary intensity within the week (heavy 3-5 reps, medium 6-8 reps, light 10-12 reps). Linear waves also effective: progress load over 3-4 weeks, then deload. Deload every 4-6 weeks.
+
+`;
+  } else {
+    references += `**Recommended Progression Model (Advanced):**
+Block Periodization recommended: 4-6 week hypertrophy block (high volume, moderate intensity) → 3-4 week strength block (lower volume, high intensity) → 1-2 week deload or test. Autoregulation via RPE critical for fatigue management.
+
+`;
+  }
+
+  // Goal-specific guidance
+  if (primaryGoal === 'muscle_building') {
+    references += `**Hypertrophy-Specific Guidance:**
+- Most sets 1-3 RIR (reps in reserve), failure used sparingly on isolation
+- Train each muscle 2x/week minimum for protein synthesis
+- Rep ranges: 6-15 reps most effective, can go 5-30 if sets are hard
+- Keep key exercises stable for 6-12 weeks to allow progressive overload
+- Rotate 1 variable at a time when progress stalls
+
+`;
+  } else if (primaryGoal === 'strength') {
+    references += `**Strength-Specific Guidance:**
+- Focus on compound lifts: squats, deadlifts, bench, rows, presses
+- Sets/reps: 3-6 sets of 1-5 reps at 70-90% 1RM
+- Rest: 2-3 minutes for main lifts
+- Accessories in 6-15 rep range to build muscle and address weak points
+- Progress by adding load when all sets completed with good form
+
+`;
+  } else if (primaryGoal === 'fat_loss') {
+    references += `**Fat Loss Guidance:**
+- Calorie deficit is primary driver (not training)
+- Target 0.5-1.0% bodyweight loss/week (slower for lean individuals)
+- Maintain strength work to preserve muscle
+- Reduce volume if recovery compromised, not intensity
+- Protein 2.0-2.4g/kg bodyweight to preserve lean mass
+
+`;
+  } else if (primaryGoal === 'endurance') {
+    references += `**Endurance/Conditioning Guidance:**
+- Zone 2 cardio (60-75% threshold, conversational pace) builds aerobic base
+- HIIT intervals improve peak fitness but cost more recovery
+- If combining with strength, separate by several hours
+- In deficit, prefer Zone 2 over excessive HIIT
+
+`;
+  } else if (primaryGoal === 'sport_specific') {
+    references += `**Sport-Specific Performance:**
+- Include power work: Olympic derivatives, plyometrics (1-3 reps, quality focus)
+- Periodize into strength, power, and conditioning blocks
+- Rest 2-4 minutes for power work
+- Address sport-specific movement patterns and energy systems
+
+`;
+  }
+
+  // Recovery-based adjustments
+  if (recovery.sleepHours < 6 || recovery.stressLevel === 'high' || recovery.stressLevel === 'very_high') {
+    references += `**Recovery-Adjusted Recommendations:**
+Given your ${recovery.sleepHours}h sleep and ${recovery.stressLevel.replace('_', ' ')} stress:
+- Start at MEV (minimum effective volume), not MAV
+- Prioritize recovery quality over training volume
+- More frequent deloads (every 3-4 weeks)
+- Auto-regulate: skip volume if readiness is poor
+
+`;
+  }
+
+  // Frequency guidance
+  references += `**Frequency Guidance:**
+- Train each muscle 2-3x/week for most goals
+- Higher frequency distributes volume and improves set quality
+- Splits: 2-3 days → full-body, 4 days → upper/lower, 5-6 days → PPL
+
+`;
+
+  return references.trim();
 }
 
