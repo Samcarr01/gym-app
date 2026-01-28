@@ -118,8 +118,8 @@ export async function generatePlan(
         schema: PLAN_JSON_SCHEMA
       }
     },
-    temperature: 0.2,
-    max_output_tokens: 2000
+    temperature: 0.3,
+    max_output_tokens: 6000
   });
 
   const raw = (response as any).output_text || '';
@@ -248,8 +248,8 @@ Return ONLY a valid JSON object that matches the schema exactly.`;
           schema: PLAN_JSON_SCHEMA
         }
       },
-      temperature: 0.2,
-      max_output_tokens: 2000
+      temperature: 0.3,
+      max_output_tokens: 6000
     });
 
     const raw = (response as any).output_text || '';
