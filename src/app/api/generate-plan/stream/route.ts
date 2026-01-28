@@ -33,35 +33,27 @@ function sanitizeInjuries(value: unknown) {
 
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
-  let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
-
   const stream = new ReadableStream<Uint8Array>({
-    start(ctrl) {
-      controller = ctrl;
-    }
-  });
+    async start(controller) {
+      const send = (event: string, data: ProgressPayload | { plan: unknown } | { message: string }) => {
+        controller.enqueue(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        );
+      };
 
-  const send = (event: string, data: ProgressPayload | { plan: unknown } | { message: string }) => {
-    if (!controller) return;
-    controller.enqueue(
-      encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
-    );
-  };
+      const sendProgress = (progress: number, stage: string, message: string) => {
+        send('progress', { progress, stage, message });
+      };
 
-  const sendProgress = (progress: number, stage: string, message: string) => {
-    send('progress', { progress, stage, message });
-  };
+      try {
+        sendProgress(5, 'validate', 'Validating inputs');
 
-  (async () => {
-    try {
-      sendProgress(5, 'validate', 'Validating inputs');
+        const body = await request.json();
 
-      const body = await request.json();
-
-      const sanitizedBody = {
-        ...body,
-        questionnaire: body?.questionnaire
-          ? {
+        const sanitizedBody = {
+          ...body,
+          questionnaire: body?.questionnaire
+            ? {
               ...body.questionnaire,
               goals: {
                 ...body.questionnaire.goals,
@@ -98,50 +90,51 @@ export async function POST(request: NextRequest) {
           : body?.questionnaire
       };
 
-      const parsed = GeneratePlanRequestSchema.safeParse(sanitizedBody);
+        const parsed = GeneratePlanRequestSchema.safeParse(sanitizedBody);
 
-      if (!parsed.success) {
-        send('error', {
-          message: parsed.error.errors[0]?.message || 'Invalid request body'
-        });
-        controller?.close();
-        return;
-      }
+        if (!parsed.success) {
+          send('error', {
+            message: parsed.error.errors[0]?.message || 'Invalid request body'
+          });
+          controller.close();
+          return;
+        }
 
-      const { questionnaire, existingPlan } = parsed.data;
-      sendProgress(15, 'prepare', 'Preparing AI request');
+        const { questionnaire, existingPlan } = parsed.data;
+        sendProgress(15, 'prepare', 'Preparing AI request');
 
-      const start = Date.now();
-      let progress = 20;
-      const ticker = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - start) / 1000);
-        progress = Math.min(progress + 2, 90);
-        sendProgress(progress, 'generate', `AI is generating your plan (${elapsed}s)`);
-      }, 4000);
+        const start = Date.now();
+        let progress = 20;
+        const ticker = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - start) / 1000);
+          progress = Math.min(progress + 2, 90);
+          sendProgress(progress, 'generate', `AI is generating your plan (${elapsed}s)`);
+        }, 4000);
 
-      try {
-        sendProgress(25, 'generate', 'Contacting AI model');
-        const plan = await generatePlan(questionnaire, existingPlan);
-        clearInterval(ticker);
-        sendProgress(95, 'finalize', 'Finalizing plan');
-        sendProgress(100, 'complete', 'Plan ready');
-        send('result', { plan });
+        try {
+          sendProgress(25, 'generate', 'Contacting AI model');
+          const plan = await generatePlan(questionnaire, existingPlan);
+          clearInterval(ticker);
+          sendProgress(95, 'finalize', 'Finalizing plan');
+          sendProgress(100, 'complete', 'Plan ready');
+          send('result', { plan });
+        } catch (error) {
+          clearInterval(ticker);
+          console.error('Generate plan error:', error);
+          send('error', {
+            message: error instanceof Error ? error.message : 'Failed to generate plan'
+          });
+        }
       } catch (error) {
-        clearInterval(ticker);
         console.error('Generate plan error:', error);
         send('error', {
           message: error instanceof Error ? error.message : 'Failed to generate plan'
         });
+      } finally {
+        controller.close();
       }
-    } catch (error) {
-      console.error('Generate plan error:', error);
-      send('error', {
-        message: error instanceof Error ? error.message : 'Failed to generate plan'
-      });
-    } finally {
-      controller?.close();
     }
-  })();
+  });
 
   return new Response(stream, {
     headers: {
