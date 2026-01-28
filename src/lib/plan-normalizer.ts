@@ -74,6 +74,43 @@ const ACCESSORY_POOL: Record<string, string[]> = {
   core: ['Plank', 'Dead Bug', 'Pallof Press', 'Side Plank', 'Bird Dog', 'Hollow Hold']
 };
 
+const TARGET_EXERCISE_MAP: Array<{ keywords: string[]; exercises: string[]; focus: 'upper' | 'lower' | 'full' }> = [
+  { keywords: ['bench', 'chest', 'press'], exercises: ['Bench Press', 'Incline Dumbbell Press'], focus: 'upper' },
+  { keywords: ['squat', 'leg', 'quads'], exercises: ['Squat', 'Front Squat', 'Leg Press'], focus: 'lower' },
+  { keywords: ['deadlift', 'posterior', 'hamstring'], exercises: ['Deadlift', 'Romanian Deadlift'], focus: 'lower' },
+  { keywords: ['glute', 'glutes'], exercises: ['Hip Thrust', 'Glute Bridge'], focus: 'lower' },
+  { keywords: ['shoulder', 'delts'], exercises: ['Overhead Press', 'Lateral Raise'], focus: 'upper' },
+  { keywords: ['back', 'row'], exercises: ['Seated Row', 'Bent Over Row'], focus: 'upper' },
+  { keywords: ['pull up', 'pull-up', 'chin'], exercises: ['Pull-Up', 'Lat Pulldown'], focus: 'upper' },
+  { keywords: ['arms', 'bicep', 'tricep'], exercises: ['Bicep Curl', 'Tricep Pushdown'], focus: 'upper' },
+  { keywords: ['core', 'abs'], exercises: ['Plank', 'Dead Bug'], focus: 'full' },
+  { keywords: ['look good', 'aesthetic'], exercises: ['Lateral Raise', 'Cable Fly', 'Bicep Curl'], focus: 'upper' },
+  { keywords: ['stronger', 'strength'], exercises: ['Squat', 'Bench Press', 'Deadlift', 'Overhead Press'], focus: 'full' }
+];
+
+function isTimeBased(reps: string): boolean {
+  const lower = reps.toLowerCase();
+  return lower.includes('sec') || lower.includes('second') || lower.includes('min') || lower.includes('minute') ||
+    lower.includes('max') || lower.includes('amrap');
+}
+
+function getSetsForExercise(
+  level: QuestionnaireData['experience']['currentLevel'],
+  isMain: boolean,
+  recovery: QuestionnaireData['recovery']
+): number {
+  let sets = 3;
+  if (level === 'beginner') sets = isMain ? 3 : 2;
+  if (level === 'intermediate') sets = isMain ? 4 : 3;
+  if (level === 'advanced') sets = isMain ? 5 : 4;
+
+  if (recovery.recoveryCapacity === 'low' || recovery.stressLevel === 'high' || recovery.stressLevel === 'very_high') {
+    sets = Math.max(2, sets - 1);
+  }
+
+  return sets;
+}
+
 function getAccessoryPool(focus: string): string[] {
   const lower = focus.toLowerCase();
   if (lower.includes('upper')) return ACCESSORY_POOL.upper;
@@ -121,6 +158,97 @@ function fillExercisesToExactCount(
   }
 }
 
+function findDayForFocus(plan: GeneratedPlan, focus: 'upper' | 'lower' | 'full'): number {
+  if (focus === 'full') return 0;
+  const focusKeyword = focus === 'upper' ? ['upper', 'chest', 'back', 'shoulder', 'arm'] : ['lower', 'leg', 'glute', 'hamstring', 'quad'];
+  const idx = plan.days.findIndex((day) =>
+    focusKeyword.some((keyword) => day.focus.toLowerCase().includes(keyword))
+  );
+  return idx === -1 ? 0 : idx;
+}
+
+function deriveTargetExercises(targets: string[]): Array<{ name: string; focus: 'upper' | 'lower' | 'full' }> {
+  const selected: Array<{ name: string; focus: 'upper' | 'lower' | 'full' }> = [];
+  const lowerTargets = targets.map((target) => target.toLowerCase());
+
+  for (const map of TARGET_EXERCISE_MAP) {
+    if (map.keywords.some((keyword) => lowerTargets.some((target) => target.includes(keyword)))) {
+      for (const exercise of map.exercises) {
+        selected.push({ name: exercise, focus: map.focus });
+      }
+    }
+  }
+
+  return selected;
+}
+
+function ensureTargetExercises(
+  plan: GeneratedPlan,
+  targets: string[],
+  restrictedKeywords: string[],
+  disliked: string[],
+  maxExercises: number | null | undefined
+) {
+  if (targets.length === 0) return;
+  const desired = deriveTargetExercises(targets);
+  if (desired.length === 0) return;
+
+  for (const target of desired) {
+    const already = plan.days.some((day) =>
+      day.exercises.some((ex) => ex.name.toLowerCase().includes(target.name.toLowerCase()))
+    );
+    if (already) continue;
+    if (containsKeyword(target.name, restrictedKeywords) || containsKeyword(target.name, disliked)) {
+      continue;
+    }
+
+    const dayIndex = findDayForFocus(plan, target.focus);
+    const day = plan.days[dayIndex];
+    const template = day.exercises[0];
+    const targetExercise = {
+      name: target.name,
+      sets: template?.sets ?? 3,
+      reps: template?.reps ?? '6-10',
+      rest: template?.rest ?? '90 seconds',
+      intent: 'Included to directly address your stated targets.',
+      notes: template?.notes ?? 'Use a controlled tempo and focus on form.',
+      substitutions: template?.substitutions ?? []
+    };
+
+    if (maxExercises && day.exercises.length >= maxExercises) {
+      day.exercises[day.exercises.length - 1] = targetExercise;
+    } else {
+      day.exercises.push(targetExercise);
+    }
+  }
+}
+
+function applyProgramDesign(
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData
+) {
+  const design = buildProgramDesign(questionnaire);
+  for (const day of plan.days) {
+    day.exercises = day.exercises.map((exercise, idx) => {
+      const isMain = idx < 2;
+      const sets = getSetsForExercise(questionnaire.experience.currentLevel, isMain, questionnaire.recovery);
+      const reps = isTimeBased(exercise.reps)
+        ? exercise.reps
+        : (isMain ? design.mainRepRange : design.accessoryRepRange);
+      const rest = isTimeBased(exercise.reps)
+        ? exercise.rest
+        : (isMain ? design.restMain : design.restAccessory);
+
+      return {
+        ...exercise,
+        sets,
+        reps,
+        rest
+      };
+    });
+  }
+}
+
 function removeDislikedExercises(plan: GeneratedPlan, disliked: string[]) {
   if (disliked.length === 0) return;
   for (const day of plan.days) {
@@ -136,34 +264,26 @@ function includeFavouriteExercises(
 ) {
   if (favourites.length === 0) return;
 
-  const target = Math.max(1, Math.min(favourites.length, plan.days.length));
-  const remaining = [...favourites];
-  let includedCount = 0;
+  const remaining = favourites.filter((fav) => !containsKeyword(fav, restrictedKeywords));
+  if (remaining.length === 0) return;
 
-  for (const day of plan.days) {
-    if (includedCount >= target) break;
-    const alreadyHasFavourite = day.exercises.some((ex) =>
-      remaining.some((fav) => ex.name.toLowerCase().includes(fav.toLowerCase()))
+  let dayIndex = 0;
+  for (const fav of remaining) {
+    const already = plan.days.some((day) =>
+      day.exercises.some((ex) => ex.name.toLowerCase().includes(fav.toLowerCase()))
     );
-    if (alreadyHasFavourite) {
-      includedCount += 1;
-      continue;
-    }
+    if (already) continue;
 
-    const nextFavIndex = remaining.findIndex(
-      (fav) => !containsKeyword(fav, restrictedKeywords)
-    );
-    if (nextFavIndex === -1) continue;
+    const day = plan.days[dayIndex % plan.days.length];
+    dayIndex += 1;
 
-    const fav = remaining.splice(nextFavIndex, 1)[0];
     const template = day.exercises[0];
-
     const favExercise = {
       name: fav,
       sets: template?.sets ?? 3,
       reps: template?.reps ?? '8-12',
       rest: template?.rest ?? '90 seconds',
-      intent: `Included because it is one of your favourite exercises.`,
+      intent: 'Included because it is one of your favourite exercises.',
       notes: template?.notes ?? 'Adjust load and form to your comfort and equipment.',
       substitutions: template?.substitutions ?? []
     };
@@ -173,7 +293,6 @@ function includeFavouriteExercises(
     } else {
       day.exercises.push(favExercise);
     }
-    includedCount += 1;
   }
 }
 
@@ -259,12 +378,14 @@ export function normalizePlan(
   const favourites = normalizeList(splitList(questionnaire.preferences.favouriteExercises));
   const disliked = normalizeList(splitList(questionnaire.preferences.dislikedExercises));
   const restricted = getRestrictedKeywords(questionnaire);
+  const targetList = normalizeList(splitList(questionnaire.goals.specificTargets));
 
   if (questionnaire.availability.daysPerWeek && plan.days.length > questionnaire.availability.daysPerWeek) {
     plan.days = plan.days.slice(0, questionnaire.availability.daysPerWeek);
   }
 
   removeDislikedExercises(plan, disliked);
+  ensureTargetExercises(plan, targetList, restricted, disliked, maxExercises);
   includeFavouriteExercises(plan, favourites, restricted, maxExercises);
   fillExercisesToExactCount(plan, questionnaire, restricted, disliked);
   ensureMaxExercises(plan, maxExercises);
@@ -278,12 +399,12 @@ export function normalizePlan(
   const recoverySummary = `Recovery: ${questionnaire.recovery.sleepHours}h sleep (${questionnaire.recovery.sleepQuality}), stress ${questionnaire.recovery.stressLevel.replace('_', ' ')}, recovery capacity ${questionnaire.recovery.recoveryCapacity}.`;
   plan.recoveryNotes = recoverySummary;
 
-  const targets = questionnaire.goals.specificTargets.length
+  const targetSummary = questionnaire.goals.specificTargets.length
     ? `Specific targets: ${questionnaire.goals.specificTargets.join(', ')}.`
     : '';
   const goalsSummary = `Goals: ${questionnaire.goals.primaryGoal.replace('_', ' ')}` +
     (questionnaire.goals.secondaryGoal ? ` + ${questionnaire.goals.secondaryGoal.replace('_', ' ')}` : '') +
-    ` over ${questionnaire.goals.timeframe}. ${targets}`;
+    ` over ${questionnaire.goals.timeframe}. ${targetSummary}`;
 
   plan.overview = appendIfMissing(plan.overview, goalsSummary, [
     questionnaire.goals.primaryGoal.replace('_', ' '),
@@ -298,7 +419,9 @@ export function normalizePlan(
   }
 
   const design = buildProgramDesign(questionnaire);
-  plan.progressionGuidance = `${design.progressionModel} ${design.deloadGuidance}`;
+  plan.progressionGuidance = `${design.progressionModel} ${design.deloadGuidance} Main lifts use ${design.mainRepRange} reps with ${design.restMain} rest; accessories use ${design.accessoryRepRange} reps with ${design.restAccessory} rest. ${design.recoveryModifier}`;
+
+  applyProgramDesign(plan, questionnaire);
 
   return plan;
 }
