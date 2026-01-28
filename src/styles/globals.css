@@ -43,6 +43,15 @@
   .animate-slide-up {
     animation: slideUp 0.3s ease-out;
   }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: floatSlow 10s ease-in-out infinite;
+  }
+  .animate-pulse-soft {
+    animation: pulseSoft 2.6s ease-in-out infinite;
+  }
 }
 
 @keyframes fadeIn {
@@ -58,6 +67,21 @@
 @keyframes shine {
   from { transform: translateX(-100%); }
   to { transform: translateX(100%); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-18px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 @media print {
