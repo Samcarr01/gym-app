@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   title: 'AI Gym Plan Builder',
   description: 'Get a personalised workout plan in minutes.',
   keywords: ['gym', 'workout', 'fitness', 'AI', 'personal training'],
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png'
+  }
 };
 
 export const viewport: Viewport = {
