@@ -6,9 +6,9 @@ export default function Home() {
       <div className="absolute right-10 top-10 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl animate-float" />
       <div className="absolute bottom-10 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-sky-400/10 blur-[120px] animate-pulse-soft" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-16">
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-12 md:py-16">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
-          <div className="space-y-8">
+          <div className="space-y-8 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.2em] text-primary">
               Totally free (for now)
             </div>
@@ -16,19 +16,19 @@ export default function Home() {
               <h1 className="text-4xl md:text-6xl font-black tracking-tight">
                 Sam&apos;s built a simple gym plan app so you don&apos;t stay fat.
               </h1>
-              <p className="text-lg text-muted-foreground max-w-xl">
+              <p className="text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
                 It&apos;s free because Sam is paying for the API credits. Please don&apos;t be greedy or he&apos;ll
                 be angry and hide under your bed. You&apos;ve been warned.
               </p>
-              <p className="text-sm text-muted-foreground max-w-xl">
+              <p className="text-sm text-muted-foreground max-w-xl mx-auto lg:mx-0">
                 Answer a short questionnaire and get a real training plan based on your goals,
                 schedule, recovery, and equipment. Build a new plan or upgrade your current one.
               </p>
             </div>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <a
                 href="/start"
-                className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-full sm:w-auto"
               >
                 Start the questionnaire
               </a>
@@ -37,7 +37,7 @@ export default function Home() {
                 No accounts. No tracking. Just gains.
               </div>
             </div>
-            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground justify-center lg:justify-start">
               <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1">
                 AI-powered split selection
               </span>
@@ -52,7 +52,7 @@ export default function Home() {
 
           <div className="relative">
             <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-primary/30 via-emerald-500/10 to-transparent blur-2xl animate-float" />
-            <div className="relative rounded-3xl border border-border/60 bg-card/70 p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
+            <div className="relative rounded-3xl border border-border/60 bg-card/70 p-6 md:p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
