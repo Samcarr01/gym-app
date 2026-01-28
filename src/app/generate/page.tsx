@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GeneratedPlan, QuestionnaireData } from '@/lib/types';
-import { generatePlanAPI } from '@/lib/api';
+import { generatePlanStream } from '@/lib/api';
 import { PlanViewer } from '@/components/PlanViewer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,9 @@ export default function GeneratePage() {
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
   const [error, setError] = useState<string>('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState('Starting...');
+  const [statusStage, setStatusStage] = useState('starting');
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -34,7 +37,15 @@ export default function GeneratePage() {
           existingPlan?: string;
         };
 
-        const generatedPlan = await generatePlanAPI(questionnaire, existingPlan);
+        const generatedPlan = await generatePlanStream(
+          questionnaire,
+          existingPlan,
+          (update) => {
+            setProgress(update.progress ?? 0);
+            setStatusMessage(update.message || 'Working...');
+            setStatusStage(update.stage || 'working');
+          }
+        );
         setPlan(generatedPlan);
         setState('success');
 
@@ -64,6 +75,9 @@ export default function GeneratePage() {
     setState('loading');
     setError('');
     setElapsedSeconds(0);
+    setProgress(0);
+    setStatusMessage('Starting...');
+    setStatusStage('starting');
     // Re-trigger the effect
     window.location.reload();
   };
@@ -76,7 +90,14 @@ export default function GeneratePage() {
   return (
     <main className="min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
-        {state === 'loading' && <LoadingState elapsedSeconds={elapsedSeconds} />}
+        {state === 'loading' && (
+          <LoadingState
+            elapsedSeconds={elapsedSeconds}
+            progress={progress}
+            statusMessage={statusMessage}
+            statusStage={statusStage}
+          />
+        )}
         {state === 'success' && plan && <PlanViewer plan={plan} />}
         {state === 'error' && (
           <ErrorState
@@ -90,11 +111,18 @@ export default function GeneratePage() {
   );
 }
 
-function LoadingState({ elapsedSeconds }: { elapsedSeconds: number }) {
-  const estimatedTotal = 120;
-  const progress = Math.min(98, Math.round((elapsedSeconds / estimatedTotal) * 100));
-  const remaining = Math.max(0, estimatedTotal - elapsedSeconds);
-  const isOverdue = elapsedSeconds > estimatedTotal;
+function LoadingState({
+  elapsedSeconds,
+  progress,
+  statusMessage,
+  statusStage
+}: {
+  elapsedSeconds: number;
+  progress: number;
+  statusMessage: string;
+  statusStage: string;
+}) {
+  const clampedProgress = Math.min(100, Math.max(5, progress || 5));
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
@@ -104,20 +132,18 @@ function LoadingState({ elapsedSeconds }: { elapsedSeconds: number }) {
       </div>
       <div className="text-center space-y-2">
         <h2 className="text-xl font-semibold">Building your plan...</h2>
-        <p className="text-muted-foreground">AI is generating your plan. This can take a couple minutes.</p>
+        <p className="text-muted-foreground">{statusMessage}</p>
       </div>
       <div className="w-full max-w-md space-y-2">
         <div className="h-2 bg-secondary rounded-full overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-500"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${clampedProgress}%` }}
           />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Elapsed: {elapsedSeconds}s</span>
-          <span>
-            {isOverdue ? 'Taking longer than usual…' : `Est. remaining: ~${remaining}s`}
-          </span>
+          <span className="capitalize">{statusStage.replace('_', ' ')}</span>
         </div>
       </div>
       <div className="flex gap-2 text-xs text-muted-foreground">
