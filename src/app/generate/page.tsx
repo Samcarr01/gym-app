@@ -15,6 +15,7 @@ export default function GeneratePage() {
   const [state, setState] = useState<PageState>('loading');
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
   const [error, setError] = useState<string>('');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -50,9 +51,19 @@ export default function GeneratePage() {
     fetchPlan();
   }, []);
 
+  useEffect(() => {
+    if (state !== 'loading') return;
+    const start = Date.now();
+    const id = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [state]);
+
   const handleRetry = () => {
     setState('loading');
     setError('');
+    setElapsedSeconds(0);
     // Re-trigger the effect
     window.location.reload();
   };
@@ -65,7 +76,7 @@ export default function GeneratePage() {
   return (
     <main className="min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
-        {state === 'loading' && <LoadingState />}
+        {state === 'loading' && <LoadingState elapsedSeconds={elapsedSeconds} />}
         {state === 'success' && plan && <PlanViewer plan={plan} />}
         {state === 'error' && (
           <ErrorState
@@ -79,7 +90,12 @@ export default function GeneratePage() {
   );
 }
 
-function LoadingState() {
+function LoadingState({ elapsedSeconds }: { elapsedSeconds: number }) {
+  const estimatedTotal = 120;
+  const progress = Math.min(98, Math.round((elapsedSeconds / estimatedTotal) * 100));
+  const remaining = Math.max(0, estimatedTotal - elapsedSeconds);
+  const isOverdue = elapsedSeconds > estimatedTotal;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
       <div className="relative">
@@ -88,7 +104,21 @@ function LoadingState() {
       </div>
       <div className="text-center space-y-2">
         <h2 className="text-xl font-semibold">Building your plan...</h2>
-        <p className="text-muted-foreground">This usually takes 15-30 seconds</p>
+        <p className="text-muted-foreground">AI is generating your plan. This can take a couple minutes.</p>
+      </div>
+      <div className="w-full max-w-md space-y-2">
+        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Elapsed: {elapsedSeconds}s</span>
+          <span>
+            {isOverdue ? 'Taking longer than usual…' : `Est. remaining: ~${remaining}s`}
+          </span>
+        </div>
       </div>
       <div className="flex gap-2 text-xs text-muted-foreground">
         <span className="animate-pulse">Analysing your profile</span>

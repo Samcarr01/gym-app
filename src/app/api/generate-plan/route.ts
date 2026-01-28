@@ -3,7 +3,7 @@ import { generatePlan } from '@/lib/openai';
 import { GeneratePlanRequestSchema } from '@/lib/types';
 
 // Allow more time for plan generation on Vercel
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
