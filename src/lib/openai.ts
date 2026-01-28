@@ -3,8 +3,12 @@ import { QuestionnaireData, GeneratedPlan, GeneratedPlanSchema } from '@/lib/typ
 import { buildPrompt } from '@/lib/prompts';
 
 function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is missing');
+  }
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey,
   });
 }
 
