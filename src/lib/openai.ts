@@ -177,6 +177,29 @@ async function refinePlanIfNeeded(
   plan: GeneratedPlan,
   questionnaire: QuestionnaireData
 ): Promise<GeneratedPlan> {
+  const requirements = {
+    goals: {
+      primary: questionnaire.goals.primaryGoal,
+      secondary: questionnaire.goals.secondaryGoal,
+      timeframe: questionnaire.goals.timeframe,
+      specificTargets: questionnaire.goals.specificTargets
+    },
+    availability: {
+      daysPerWeek: questionnaire.availability.daysPerWeek,
+      sessionDuration: questionnaire.availability.sessionDuration
+    },
+    preferences: {
+      favouriteExercises: questionnaire.preferences.favouriteExercises,
+      dislikedExercises: questionnaire.preferences.dislikedExercises,
+      preferredSplit: questionnaire.preferences.preferredSplit
+    },
+    recovery: questionnaire.recovery,
+    nutrition: questionnaire.nutrition,
+    constraints: {
+      maxExercisesPerSession: questionnaire.constraints.maxExercisesPerSession
+    }
+  };
+
   const reviewPrompt = `
 You are reviewing an AI-generated workout plan for alignment with the user's questionnaire.
 Your job is to fix any mismatches and improve quality, while keeping the same JSON schema.
@@ -190,6 +213,10 @@ Rules:
 - Exclude disliked exercises
 - Respect max exercises per session
 - Respect equipment and injuries
+- Ensure every day has exactly maxExercisesPerSession exercises if a max is provided
+
+Must-match requirements (use these exact values where relevant):
+${JSON.stringify(requirements)}
 
 User questionnaire data:
 ${userProfile}

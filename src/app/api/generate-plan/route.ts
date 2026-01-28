@@ -10,10 +10,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const sanitizeStringArray = (value: unknown): string[] => {
-      if (!Array.isArray(value)) return [];
-      return value
-        .map((item) => (typeof item === 'string' ? item.trim() : ''))
-        .filter((item) => item.length > 0);
+      const items: string[] = [];
+
+      const pushItem = (raw: string) => {
+        raw
+          .split(/[,\n;]+/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .forEach((item) => items.push(item));
+      };
+
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === 'string') pushItem(item);
+        }
+      } else if (typeof value === 'string') {
+        pushItem(value);
+      }
+
+      return Array.from(new Set(items));
     };
 
     const sanitizeInjuries = (value: unknown) => {
