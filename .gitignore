@@ -1,0 +1,38 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# next.js
+.next/
+out/
+build/
+
+# env files
+.env*.local
+.env
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# claude
+.claude/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db

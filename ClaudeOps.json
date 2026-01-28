@@ -1,0 +1,41 @@
+{
+  "name": "ai-gym-plan-builder",
+  "version": "1.0.0",
+  "description": "AI-powered personalised gym plan generator",
+  "language": "typescript",
+  "framework": "nextjs",
+  "database": "supabase",
+  "authProvider": "none",
+  "deployment": "vercel",
+  "aiModel": "gpt-5.2",
+  "promptPacks": [
+    "ui",
+    "api"
+  ],
+  "modules": {
+    "questionnaire": "Claude-questionnaire.md",
+    "ai": "Claude-ai.md",
+    "ui": "Claude-ui.md",
+    "api": "Claude-api.md",
+    "db": "Claude-db.md"
+  },
+  "buildChain": [
+    "01-foundation",
+    "02-types",
+    "03-ui-base",
+    "04-questionnaire",
+    "05-ai-engine",
+    "06-api",
+    "07-plan-viewer",
+    "08-integration"
+  ],
+  "environment": {
+    "required": [
+      "OPENAI_API_KEY"
+    ],
+    "optional": [
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    ]
+  }
+}
