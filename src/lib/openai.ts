@@ -18,16 +18,17 @@ export async function generatePlan(
 ): Promise<GeneratedPlan> {
   const openai = getOpenAIClient();
   const { system, user } = buildPrompt(questionnaire, existingPlan);
+  const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o', // Use gpt-4o or your preferred model
+    model,
     messages: [
       { role: 'system', content: system },
       { role: 'user', content: user }
     ],
     response_format: { type: 'json_object' },
-    temperature: 0.7,
-    max_tokens: 2500
+    temperature: 0.5,
+    max_tokens: 1200
   });
 
   const content = response.choices[0].message.content;

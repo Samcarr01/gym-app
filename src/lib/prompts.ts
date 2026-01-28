@@ -16,6 +16,9 @@ CRITICAL RULES:
 - Always include warm-up and cool-down guidance
 - Default to conservative volume for beginners
 - Include rest day recommendations
+- Keep the plan concise: limit exercises per day to 5 unless a max is specified
+- Keep text brief: 1 sentence per description/intent/notes
+- If maxExercisesPerSession is provided, do not exceed it
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object matching this exact structure:
