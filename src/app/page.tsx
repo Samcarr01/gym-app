@@ -86,6 +86,65 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        <section className="mt-20 md:mt-28 border-t border-border/60 pt-16">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] items-center">
+            <div className="relative mx-auto w-full max-w-sm">
+              <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/40 via-emerald-500/10 to-transparent blur-2xl animate-float-slow" />
+              <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-3 shadow-xl">
+                <img
+                  src="/sam-carr.jpg"
+                  alt="Sam Carr, builder of this app"
+                  className="h-[420px] w-full object-cover rounded-2xl"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-6 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-4 py-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Meet the builder
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Sam Carr made this for his own workouts. You get it for free (for now).
+              </h2>
+              <p className="text-muted-foreground max-w-xl mx-auto lg:mx-0">
+                Sam built this because he was tired of stale templates and wanted a plan that listens.
+                It&apos;s free while he&apos;s feeling generous — but expect a price tag in the future when
+                his API bill starts to look like a mortgage.
+              </p>
+              <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+                <p className="text-foreground font-semibold">
+                  Fun fact: Sam uses this himself.
+                </p>
+                <p>
+                  So if it gives you a brutal leg day, blame him.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3 justify-center lg:justify-start text-xs text-muted-foreground">
+                <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1">
+                  Future CEO of &quot;Pay Me Gym Plans&quot;
+                </span>
+                <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1">
+                  Probably charging soon
+                </span>
+                <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1">
+                  Built with caffeine
+                </span>
+              </div>
+              <div className="flex justify-center lg:justify-start">
+                <a
+                  href="/start"
+                  className="inline-flex items-center justify-center rounded-md border border-primary/40 px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                >
+                  Start training before he charges
+                </a>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Drop the photo at <span className="text-primary">/public/sam-carr.jpg</span> if it isn&apos;t showing yet.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );
