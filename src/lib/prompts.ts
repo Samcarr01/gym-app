@@ -168,6 +168,39 @@ EXAMPLES OF GOOD RATIONALE:
 - Disliked exercises must be avoided
 - If sport-specific goal, include power/strength, conditioning, and skill-specific work
 
+## Exercise Ordering Rules (CRITICAL)
+
+Every workout MUST follow this exercise order:
+
+1. **COMPOUND MOVEMENTS FIRST** (when energy and focus are highest)
+   - Multi-joint exercises: Squats, Deadlifts, Bench Press, Rows, Pull-ups, Overhead Press
+   - These require the most neural drive and technique
+
+2. **WEAK POINT EXERCISES SECOND** (while still fresh)
+   - If user has identified weak points, address them EARLY in the workout
+   - Example: If "chest" is weak, do pressing movements in positions 1-2, not at the end
+
+3. **ACCESSORY/ISOLATION MOVEMENTS LAST**
+   - Single-joint exercises: Curls, Extensions, Raises, Flyes
+   - These can be done effectively even when fatigued
+
+4. **NO DUPLICATE EXERCISES**
+   - Each exercise name should appear only ONCE per day
+   - Use variations for similar movements (e.g., Incline DB Press vs Flat DB Press)
+
+**EXAMPLE CORRECT ORDER (Upper Body):**
+1. Bench Press (compound, addresses weak chest)
+2. Dumbbell Row (compound)
+3. Overhead Press (compound)
+4. Incline Dumbbell Press (secondary compound for weak chest)
+5. Tricep Pushdown (isolation)
+6. Bicep Curl (isolation)
+
+**EXAMPLE INCORRECT ORDER:**
+1. Bicep Curl (isolation first - WRONG)
+2. Lateral Raise (isolation - WRONG)
+3. Bench Press (compound should be first)
+
 OUTPUT FORMAT:
 You must respond with a valid JSON object matching this exact structure:
 {
@@ -285,6 +318,79 @@ function formatInjuries(injuries: { currentInjuries: InjuryRecord[]; movementRes
   }
 
   return output;
+}
+
+// Equipment to exercise restrictions mapping
+const EQUIPMENT_RESTRICTIONS: Record<string, string[]> = {
+  'no_gym': [
+    'Barbell Squat', 'Back Squat', 'Front Squat',
+    'Barbell Bench Press', 'Barbell Deadlift', 'Conventional Deadlift',
+    'Barbell Row', 'Bent Over Barbell Row', 'Barbell Overhead Press',
+    'Leg Press', 'Leg Curl', 'Leg Extension', 'Hack Squat',
+    'Cable Row', 'Seated Cable Row', 'Cable Crossover', 'Cable Fly',
+    'Lat Pulldown', 'Machine Lat Pulldown',
+    'Chest Press Machine', 'Shoulder Press Machine',
+    'Smith Machine', 'Pec Deck', 'Preacher Curl Machine'
+  ],
+  'no_barbell': [
+    'Barbell Squat', 'Back Squat', 'Front Squat',
+    'Barbell Bench Press', 'Barbell Deadlift', 'Conventional Deadlift',
+    'Barbell Row', 'Bent Over Barbell Row', 'Barbell Overhead Press',
+    'Barbell Curl', 'Skull Crushers with Barbell'
+  ],
+  'no_machines': [
+    'Leg Press', 'Leg Curl', 'Leg Extension', 'Hack Squat',
+    'Lat Pulldown', 'Machine Lat Pulldown',
+    'Chest Press Machine', 'Shoulder Press Machine',
+    'Pec Deck', 'Preacher Curl Machine', 'Cable Row', 'Cable Crossover'
+  ],
+  'no_cables': [
+    'Cable Row', 'Seated Cable Row', 'Cable Crossover', 'Cable Fly',
+    'Cable Curl', 'Tricep Pushdown', 'Face Pull', 'Cable Lateral Raise'
+  ]
+};
+
+function getEquipmentRestrictions(equipment: QuestionnaireData['equipment']): string {
+  const restricted: string[] = [];
+
+  // No gym access = home workout only
+  if (!equipment.gymAccess) {
+    restricted.push(...EQUIPMENT_RESTRICTIONS['no_gym']);
+  }
+
+  // Check for specific equipment limitations
+  const limitedLower = equipment.limitedEquipment.map(e => e.toLowerCase()).join(' ');
+  if (limitedLower.includes('no barbell') || limitedLower.includes('barbell')) {
+    restricted.push(...EQUIPMENT_RESTRICTIONS['no_barbell']);
+  }
+  if (limitedLower.includes('no machine') || limitedLower.includes('machine')) {
+    restricted.push(...EQUIPMENT_RESTRICTIONS['no_machines']);
+  }
+  if (limitedLower.includes('no cable') || limitedLower.includes('cable')) {
+    restricted.push(...EQUIPMENT_RESTRICTIONS['no_cables']);
+  }
+
+  const uniqueRestricted = Array.from(new Set(restricted));
+
+  if (uniqueRestricted.length === 0) {
+    return '';
+  }
+
+  return `
+### EQUIPMENT RESTRICTIONS (CRITICAL - DO NOT USE THESE EXERCISES)
+The user does NOT have access to the following equipment. You MUST NOT include these exercises:
+
+**BANNED EXERCISES:**
+${uniqueRestricted.map(e => `- ${e}`).join('\n')}
+
+**Instead, use these alternatives:**
+- For barbell exercises → Dumbbell or bodyweight variations
+- For machine exercises → Free weight or bodyweight alternatives
+- For cable exercises → Resistance band or dumbbell alternatives
+- For leg press/hack squat → Goblet squats, Bulgarian split squats, lunges
+
+IF YOU INCLUDE ANY BANNED EXERCISE, THE PLAN WILL BE REJECTED.
+`;
 }
 
 export function buildPrompt(
@@ -499,7 +605,7 @@ ${programDesignToPrompt(programDesign)}
 - Gym type: ${questionnaire.equipment.gymType || 'N/A'}
 - Available equipment: ${questionnaire.equipment.availableEquipment.join(', ') || 'Not specified'}
 - Limited equipment: ${questionnaire.equipment.limitedEquipment.join(', ') || 'None'}
-
+${getEquipmentRestrictions(questionnaire.equipment)}
 ### Injuries (CRITICAL - MUST RESPECT)
 ${formatInjuries(questionnaire.injuries)}
 

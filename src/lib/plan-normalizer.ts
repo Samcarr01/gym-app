@@ -277,15 +277,83 @@ function applyEquipmentSwap(name: string, questionnaire: QuestionnaireData): str
   return name;
 }
 
-function rankExercise(name: string): number {
+// Primary compound movements - should always be first
+const PRIMARY_COMPOUNDS = [
+  'squat', 'deadlift', 'bench press', 'overhead press', 'military press',
+  'barbell row', 'bent over row', 'pull-up', 'pull up', 'chin-up', 'chin up',
+  'dip', 'hip thrust', 'romanian deadlift', 'front squat', 'back squat'
+];
+
+// Secondary compound movements - after primary compounds
+const SECONDARY_COMPOUNDS = [
+  'incline press', 'decline press', 'dumbbell press', 'db press',
+  'cable row', 'seated row', 'lat pulldown', 'pulldown',
+  'lunge', 'split squat', 'bulgarian', 'leg press', 'step-up', 'step up',
+  'push-up', 'push up', 'inverted row', 'goblet squat',
+  'face pull', 'upright row', 't-bar row'
+];
+
+// Isolation movements - should be last
+const ISOLATION_EXERCISES = [
+  'curl', 'extension', 'raise', 'fly', 'flye', 'kickback',
+  'pushdown', 'push down', 'pressdown', 'shrug',
+  'calf raise', 'leg curl', 'leg extension', 'hamstring curl',
+  'pec deck', 'cable cross', 'lateral raise', 'front raise', 'rear delt',
+  'tricep', 'bicep', 'forearm', 'wrist curl', 'plank', 'crunch', 'ab '
+];
+
+function rankExercise(name: string, weakPoints: string[] = []): number {
   const lower = name.toLowerCase();
-  if (MAIN_LIFT_KEYWORDS.some((keyword) => lower.includes(keyword))) return 0;
-  return 1;
+
+  // Check if exercise targets a weak point (gets priority bump)
+  const targetsWeakPoint = weakPoints.some(wp => {
+    const wpLower = wp.toLowerCase();
+    // Map common weak points to exercise keywords
+    if (wpLower.includes('chest') && (lower.includes('press') || lower.includes('push') || lower.includes('fly') || lower.includes('dip'))) return true;
+    if (wpLower.includes('back') && (lower.includes('row') || lower.includes('pull') || lower.includes('lat'))) return true;
+    if (wpLower.includes('shoulder') && (lower.includes('press') || lower.includes('raise') || lower.includes('delt'))) return true;
+    if (wpLower.includes('leg') && (lower.includes('squat') || lower.includes('leg') || lower.includes('lunge'))) return true;
+    if (wpLower.includes('glute') && (lower.includes('hip') || lower.includes('glute') || lower.includes('thrust'))) return true;
+    if (wpLower.includes('hamstring') && (lower.includes('deadlift') || lower.includes('curl') || lower.includes('rdl'))) return true;
+    if (wpLower.includes('quad') && (lower.includes('squat') || lower.includes('extension') || lower.includes('leg press'))) return true;
+    if (wpLower.includes('arm') && (lower.includes('curl') || lower.includes('tricep') || lower.includes('extension'))) return true;
+    return false;
+  });
+
+  // Rank 0: Primary compounds (always first)
+  if (PRIMARY_COMPOUNDS.some(kw => lower.includes(kw))) {
+    return targetsWeakPoint ? 0 : 1;
+  }
+
+  // Rank 1-2: Secondary compounds
+  if (SECONDARY_COMPOUNDS.some(kw => lower.includes(kw))) {
+    return targetsWeakPoint ? 1 : 2;
+  }
+
+  // Rank 3-4: Isolation exercises (always last)
+  if (ISOLATION_EXERCISES.some(kw => lower.includes(kw))) {
+    return targetsWeakPoint ? 3 : 4;
+  }
+
+  // Default: treat as secondary compound
+  return targetsWeakPoint ? 1 : 2;
 }
 
-function reorderExercises(plan: GeneratedPlan) {
+function reorderExercises(plan: GeneratedPlan, weakPoints: string[] = []) {
   for (const day of plan.days) {
-    day.exercises = [...day.exercises].sort((a, b) => rankExercise(a.name) - rankExercise(b.name));
+    // Remove duplicates first (keep first occurrence)
+    const seen = new Set<string>();
+    const uniqueExercises = day.exercises.filter(ex => {
+      const key = ex.name.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by rank
+    day.exercises = uniqueExercises.sort((a, b) =>
+      rankExercise(a.name, weakPoints) - rankExercise(b.name, weakPoints)
+    );
   }
 }
 
@@ -1235,6 +1303,7 @@ export function normalizePlan(
   const disliked = normalizeList(splitList(questionnaire.preferences.dislikedExercises));
   const restricted = getRestrictedKeywords(questionnaire);
   const targetList = normalizeList(splitList(questionnaire.goals.specificTargets));
+  const weakPoints = normalizeList(splitList(questionnaire.experience.weakPoints));
 
   if (questionnaire.availability.daysPerWeek && plan.days.length > questionnaire.availability.daysPerWeek) {
     plan.days = plan.days.slice(0, questionnaire.availability.daysPerWeek);
@@ -1291,7 +1360,7 @@ export function normalizePlan(
   plan.progressionGuidance = `${design.progressionModel} ${design.deloadGuidance} Main lifts use ${design.mainRepRange} reps with ${design.restMain} rest; accessories use ${design.accessoryRepRange} reps with ${design.restAccessory} rest. ${design.recoveryModifier}`;
 
   applyPreferredDayLabels(plan, questionnaire);
-  reorderExercises(plan);
+  reorderExercises(plan, weakPoints);
   applyProgramDesign(plan, questionnaire);
 
   return plan;
