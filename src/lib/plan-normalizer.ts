@@ -677,12 +677,33 @@ function buildNutritionNotes(questionnaire: QuestionnaireData): string {
     }
   })();
 
+  // Build restriction-aware meal examples
+  const hasNuts = restrictions.some(r => r.toLowerCase().includes('nut'));
+  const isDairy = restrictions.some(r => r.toLowerCase().includes('dairy') || r.toLowerCase().includes('lactose'));
+  const isVegan = restrictions.some(r => r.toLowerCase().includes('vegan'));
+  const isVegetarian = restrictions.some(r => r.toLowerCase().includes('vegetarian'));
+
+  const breakfastProtein = isVegan ? 'tofu scramble with vegetables' : isVegetarian ? '4 eggs scrambled' : '4 eggs or 150g chicken breast';
+  const lunchProtein = isVegan ? '200g tempeh or seitan' : isVegetarian ? '200g cottage cheese or eggs' : '200g grilled chicken breast';
+  const dinnerProtein = isVegan ? '200g tofu or legumes' : isVegetarian ? '200g Greek yogurt or eggs' : '200g salmon or lean beef';
+  const snackProtein = hasNuts ? 'protein shake or Greek yogurt' : 'handful of almonds or protein shake';
+
+  const sampleMeals = `
+
+Sample Training Day Meals:
+- Breakfast (7:00 AM): ${breakfastProtein}, 2 slices whole grain toast, 1 banana - ~35g protein
+- Lunch (12:00 PM): ${lunchProtein}, 150g rice, mixed vegetables - ~45g protein
+- Pre-workout (4:00 PM): ${snackProtein}, piece of fruit - ~20g protein
+- Dinner (7:00 PM): ${dinnerProtein}, sweet potato, steamed broccoli - ~40g protein
+
+Sample Rest Day: Reduce carbs slightly, maintain protein intake.`;
+
   const timingGuidance = 'Include protein in 3-4 meals; add a light pre-workout snack (carbs + protein) 60-90 min before and a post-workout meal within 1-2 hours.';
 
-  const restrictionNote = restrictions.length ? ` Restrictions: ${restrictions.join(', ')}.` : '';
+  const restrictionNote = restrictions.length ? ` Dietary restrictions: ${restrictions.join(', ')}.` : '';
   const supplementNote = supplements.length ? ` Supplements: ${supplements.join(', ')}.` : '';
 
-  return `Nutrition: ${approach}. ${calorieGuidance} ${proteinGuidance} ${timingGuidance}${restrictionNote}${supplementNote}`.trim();
+  return `Nutrition approach: ${approach}. ${calorieGuidance} ${proteinGuidance} ${timingGuidance}${sampleMeals}${restrictionNote}${supplementNote}`.trim();
 }
 
 function diversifyExercisesAcrossDays(
@@ -1077,7 +1098,13 @@ export function normalizePlan(
   fillExercisesToExactCount(plan, questionnaire, restricted, disliked);
   ensureMaxExercises(plan, maxExercises, [...favourites, ...targetList]);
 
-  plan.nutritionNotes = buildNutritionNotes(questionnaire);
+  // Preserve AI-generated nutrition notes if they include meal examples, otherwise use default
+  const aiNutritionHasMeals = plan.nutritionNotes &&
+    plan.nutritionNotes.toLowerCase().includes('breakfast') &&
+    plan.nutritionNotes.toLowerCase().includes('lunch');
+  if (!aiNutritionHasMeals) {
+    plan.nutritionNotes = buildNutritionNotes(questionnaire);
+  }
 
   const recoverySummary = `Recovery: ${questionnaire.recovery.sleepHours}h sleep (${questionnaire.recovery.sleepQuality}), stress ${questionnaire.recovery.stressLevel.replace('_', ' ')}, recovery capacity ${questionnaire.recovery.recoveryCapacity}.`;
   plan.recoveryNotes = recoverySummary;
