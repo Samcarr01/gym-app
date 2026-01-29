@@ -15,6 +15,8 @@ interface PlanViewerProps {
 
 export function PlanViewer({ plan }: PlanViewerProps) {
   const [copied, setCopied] = useState(false);
+  const totalExercises = plan.days.reduce((sum, day) => sum + day.exercises.length, 0);
+  const avgExercises = plan.days.length ? Math.round(totalExercises / plan.days.length) : 0;
 
   const handleCopy = async () => {
     const text = formatPlanAsText(plan);
@@ -30,55 +32,81 @@ export function PlanViewer({ plan }: PlanViewerProps) {
   return (
     <div className="space-y-8 print:space-y-4">
       {/* Header */}
-      <header className="glass-panel p-6 md:p-8 space-y-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge className="border-primary/30 bg-primary/10 text-primary">Plan ready</Badge>
-          <Badge variant="outline" className="tracking-normal normal-case">
-            {plan.weeklyStructure}
-          </Badge>
-        </div>
-        <div className="space-y-3">
-          <h1 className="text-3xl md:text-5xl font-semibold tracking-tight">{plan.planName}</h1>
-          <p className="text-muted-foreground text-lg max-w-3xl leading-relaxed">{plan.overview}</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="soft-card p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Frequency</p>
-            <p className="text-lg font-semibold mt-2">{plan.days.length} days / week</p>
+      <header className="relative overflow-hidden glass-panel p-6 md:p-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5" />
+        <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge className="border-primary/30 bg-primary/10 text-primary">Plan ready</Badge>
+              <Badge variant="outline" className="tracking-normal normal-case">
+                {plan.weeklyStructure}
+              </Badge>
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-3xl md:text-5xl font-semibold tracking-tight">{plan.planName}</h1>
+              <p className="text-muted-foreground text-base md:text-lg leading-relaxed max-w-2xl line-clamp-5">
+                {plan.overview}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3 print:hidden">
+              <Button onClick={handleCopy}>
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Plan
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Start Over
+                </Link>
+              </Button>
+            </div>
           </div>
-          <div className="soft-card p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Session length</p>
-            <p className="text-lg font-semibold mt-2">{plan.days[0]?.duration || '60 min'}</p>
+
+          <div className="space-y-4">
+            <div className="soft-card p-5 space-y-4">
+              <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Plan at a glance</p>
+              <div className="grid gap-3 text-sm text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span>Frequency</span>
+                  <span className="text-foreground font-semibold">{plan.days.length} days / week</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Session length</span>
+                  <span className="text-foreground font-semibold">{plan.days[0]?.duration || '60 min'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Avg. exercises</span>
+                  <span className="text-foreground font-semibold">{avgExercises} / session</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Split</span>
+                  <span className="text-foreground font-semibold text-right max-w-[180px] truncate">
+                    {plan.weeklyStructure}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="soft-card p-5 space-y-3">
+              <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Weekly workload</p>
+              <p className="text-2xl font-semibold">{totalExercises} total exercises</p>
+              <p className="text-sm text-muted-foreground">
+                Balanced across your training days to keep intensity high without burning you out.
+              </p>
+            </div>
           </div>
-          <div className="soft-card p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Split</p>
-            <p className="text-lg font-semibold mt-2">{plan.weeklyStructure}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-3 print:hidden">
-          <Button onClick={handleCopy}>
-            {copied ? (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Plan
-              </>
-            )}
-          </Button>
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Start Over
-            </Link>
-          </Button>
         </div>
       </header>
 

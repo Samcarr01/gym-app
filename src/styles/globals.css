@@ -102,6 +102,12 @@
   .font-body {
     font-family: var(--font-body);
   }
+  .line-clamp-5 {
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   .animate-fade-in {
     animation: fadeIn 0.3s ease-in-out;
   }
