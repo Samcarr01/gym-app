@@ -416,9 +416,9 @@ function fillExercisesToExactCount(
         sets: day.exercises[0]?.sets ?? 3,
         reps: day.exercises[0]?.reps ?? '8-12',
         rest: day.exercises[0]?.rest ?? '90 seconds',
-        intent: 'Accessory work to round out the session.',
-        rationale: 'Added to complete the workout and increase training volume.',
-        notes: 'Use a controlled tempo and focus on form.',
+        intent: 'Supporting movement for balanced muscle development.',
+        rationale: 'Added to increase training volume for the target muscle group.',
+        notes: 'Control the eccentric (2-3 seconds down), maintain tension throughout.',
         substitutions: [],
         progressionNote: '📈 Add 2.5kg when completing all sets at top of rep range. Deload 10% after 4 weeks.'
       });
@@ -500,8 +500,8 @@ function ensureMandatoryExercises(
       sets: template?.sets ?? 3,
       reps: template?.reps ?? '6-10',
       rest: template?.rest ?? '90 seconds',
-      intent: 'Core lift selected to match your goals and targets.',
-      rationale: `Selected as a core compound movement to align with your ${item.focus} training focus.`,
+      intent: 'Primary compound movement for strength and muscle development.',
+      rationale: `Compound lift targeting ${item.focus} muscles for foundational strength.`,
       notes: template?.notes ?? 'Use controlled form and progressive overload.',
       substitutions: template?.substitutions ?? [],
       progressionNote: template?.progressionNote && template.progressionNote.length >= 20 ? template.progressionNote : '📈 Add 2.5kg when completing 3 sets at top of rep range. Deload 10% every 4-6 weeks.'
@@ -543,9 +543,9 @@ function ensureTargetExercises(
       sets: template?.sets ?? 3,
       reps: template?.reps ?? '6-10',
       rest: template?.rest ?? '90 seconds',
-      intent: 'Included to directly address your stated targets.',
-      rationale: `Specifically chosen to target ${target.name} as mentioned in your specific goals.`,
-      notes: template?.notes ?? 'Use a controlled tempo and focus on form.',
+      intent: `Targets the ${target.name} movement pattern for your training goals.`,
+      rationale: `Chosen to develop ${target.name} strength and technique.`,
+      notes: template?.notes ?? 'Control the eccentric, pause briefly at the stretch position.',
       substitutions: template?.substitutions ?? [],
       progressionNote: template?.progressionNote && template.progressionNote.length >= 20 ? template.progressionNote : '📈 Add 1-2 reps per session, then increase weight by 2.5kg and reset reps. Deload every 4 weeks.'
     };
@@ -840,7 +840,7 @@ function ensureWeakPointExercises(
       rest: template?.rest ?? '60-90 sec',
       intent: 'Included to address a stated weak point.',
       rationale: 'Specifically targeting your identified weak point for balanced development.',
-      notes: template?.notes ?? 'Use a controlled tempo and full range of motion.',
+      notes: template?.notes ?? 'Control the movement through full range, pause at stretch position.',
       substitutions: [],
       progressionNote: template?.progressionNote && template.progressionNote.length >= 20 ? template.progressionNote : '📈 Increase reps or weight by 5-10% when all sets complete with good form. Deload every 4 weeks.'
     };
