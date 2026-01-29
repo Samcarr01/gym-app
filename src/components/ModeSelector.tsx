@@ -13,8 +13,8 @@ interface ModeCardProps {
 
 function ModeCard({ title, description, icon, href }: ModeCardProps) {
   return (
-    <Link href={href}>
-      <Card className="p-6 hover:border-primary/50 transition-all hover:-translate-y-1 cursor-pointer group">
+    <Link href={href} className="block h-full">
+      <Card className="h-full p-6 hover:border-primary/50 transition-all hover:-translate-y-1 cursor-pointer group flex flex-col">
         <div className="flex items-start gap-4">
           <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
             {icon}
@@ -24,7 +24,7 @@ function ModeCard({ title, description, icon, href }: ModeCardProps) {
             <p className="text-muted-foreground text-sm mt-2 leading-relaxed">{description}</p>
           </div>
         </div>
-        <div className="mt-6 inline-flex items-center gap-2 text-sm text-primary">
+        <div className="mt-auto pt-6 inline-flex items-center gap-2 text-sm text-primary">
           Continue <ArrowUpRight className="h-4 w-4" />
         </div>
       </Card>
@@ -34,7 +34,7 @@ function ModeCard({ title, description, icon, href }: ModeCardProps) {
 
 export function ModeSelector() {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2 items-stretch">
       <ModeCard
         title="Build New Plan"
         description="Start fresh with a complete questionnaire to create your personalised workout plan"
