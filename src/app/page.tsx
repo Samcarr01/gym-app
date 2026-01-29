@@ -1,15 +1,19 @@
+import Link from 'next/link';
+import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
+import { Button } from '@/components/ui/button';
+
 export default function Home() {
   return (
-    <main className="relative min-h-screen bg-transparent">
-      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-12 md:py-16">
-        <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
+    <main className="min-h-screen flex flex-col">
+      <SiteHeader />
+      <div className="page-container flex-1 py-12 md:py-16">
+        <section className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
           <div className="space-y-8 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.2em] text-primary">
-              Totally free (for now)
-            </div>
+            <span className="section-kicker">Totally free (for now)</span>
             <div className="space-y-4">
-              <h1 className="text-4xl md:text-6xl font-black tracking-tight">
-                Sam&apos;s built a simple gym plan app so you don&apos;t stay fat.
+              <h1 className="text-4xl md:text-6xl font-semibold tracking-tight">
+                Sam built a simple gym plan app so you don&apos;t stay fat.
               </h1>
               <p className="text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
                 It&apos;s free because Sam is paying for the API credits. Please don&apos;t be greedy or he&apos;ll
@@ -20,13 +24,10 @@ export default function Home() {
                 schedule, recovery, and equipment. Build a new plan or upgrade your current one.
               </p>
             </div>
-            <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-              <a
-                href="/start"
-                className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-[1.02] hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-full sm:w-auto"
-              >
-                Start the questionnaire
-              </a>
+            <div className="flex flex-wrap gap-4 justify-center lg:justify-start items-center">
+              <Button asChild size="lg">
+                <Link href="/start">Start the questionnaire</Link>
+              </Button>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 No accounts. No tracking. Just gains.
@@ -47,7 +48,7 @@ export default function Home() {
 
           <div className="relative">
             <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-primary/30 via-emerald-500/10 to-transparent blur-2xl animate-float" />
-            <div className="relative rounded-3xl border border-border/60 bg-card/70 p-6 md:p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
+            <div className="glass-panel p-6 md:p-8">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -85,9 +86,72 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <section className="mt-20 md:mt-28 border-t border-border/60 pt-16">
+        <section id="features" className="mt-20 md:mt-28 space-y-10">
+          <div className="space-y-3 text-center">
+            <span className="section-kicker">Features</span>
+            <h2 className="text-3xl md:text-4xl font-semibold">Everything a real training plan needs.</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              No cookie-cutter templates. The plan is built around your recovery, constraints, and goals.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                title: 'Personalised split',
+                copy: 'AI chooses the split based on your recovery capacity, schedule, and goals.'
+              },
+              {
+                title: 'Exercise variety',
+                copy: 'Favourites included, weak points addressed, and no endless copy/paste days.'
+              },
+              {
+                title: 'Real guidance',
+                copy: 'Nutrition and recovery notes are specific, actionable, and actually useful.'
+              }
+            ].map((item) => (
+              <div key={item.title} className="soft-card p-6 space-y-3">
+                <h3 className="font-display text-lg font-semibold">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.copy}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="how" className="mt-20 md:mt-28 space-y-10">
+          <div className="space-y-3 text-center">
+            <span className="section-kicker">How it works</span>
+            <h2 className="text-3xl md:text-4xl font-semibold">Three steps to a plan you&apos;ll follow.</h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                step: '01',
+                title: 'Answer the questionnaire',
+                copy: 'Tell us your goals, schedule, equipment, and preferences.'
+              },
+              {
+                step: '02',
+                title: 'AI builds your program',
+                copy: 'We apply the knowledge base and adjust for recovery and goals.'
+              },
+              {
+                step: '03',
+                title: 'Train with confidence',
+                copy: 'Export, print, or keep tweaking as life changes.'
+              }
+            ].map((item) => (
+              <div key={item.step} className="glass-panel p-6 space-y-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-primary">{item.step}</p>
+                <h3 className="font-display text-lg font-semibold">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.copy}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="sam" className="mt-20 md:mt-28 border-t border-border/60 pt-16">
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] items-center">
             <div className="relative mx-auto w-full max-w-sm">
               <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/40 via-emerald-500/10 to-transparent blur-2xl animate-float-slow" />
@@ -101,10 +165,8 @@ export default function Home() {
             </div>
 
             <div className="space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-4 py-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Meet the builder
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              <span className="section-kicker">Meet the builder</span>
+              <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
                 Sam Carr made this for his own workouts. You get it for free (for now).
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto lg:mx-0">
@@ -112,7 +174,7 @@ export default function Home() {
                 It&apos;s free while he&apos;s feeling generous — but expect a price tag in the future when
                 his API bill starts to look like a mortgage.
               </p>
-              <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+              <div className="soft-card p-4 text-sm text-muted-foreground">
                 <p className="text-foreground font-semibold">
                   Fun fact: Sam uses this himself.
                 </p>
@@ -132,20 +194,30 @@ export default function Home() {
                 </span>
               </div>
               <div className="flex justify-center lg:justify-start">
-                <a
-                  href="/start"
-                  className="inline-flex items-center justify-center rounded-md border border-primary/40 px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
-                >
-                  Start training before he charges
-                </a>
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/start">Start training before he charges</Link>
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Drop the photo at <span className="text-primary">/public/sam-carr.png</span> if it isn&apos;t showing yet.
-              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-20 md:mt-28">
+          <div className="glass-panel p-8 md:p-10 text-center space-y-4">
+            <h2 className="text-3xl md:text-4xl font-semibold">Ready to train like you mean it?</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Get a plan that actually matches your goals, recovery, and equipment. It&apos;s free until Sam
+              starts charging rent for his API bill.
+            </p>
+            <div className="flex justify-center">
+              <Button asChild size="lg">
+                <Link href="/start">Generate my plan</Link>
+              </Button>
             </div>
           </div>
         </section>
       </div>
+      <SiteFooter />
     </main>
   );
 }

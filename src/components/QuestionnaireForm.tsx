@@ -117,7 +117,7 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
 
   return (
     <FormProvider {...form}>
-      <div className="space-y-6">
+      <div className="glass-panel p-6 md:p-8 space-y-6">
         <StepIndicator
           totalSteps={steps.length}
           currentStep={currentStep}
@@ -131,7 +131,7 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
             <StepComponent form={form} />
           ) : null}
         </div>
-        <div className="flex justify-between pt-6 border-t">
+        <div className="flex flex-col gap-4 pt-6 border-t border-border/50 sm:flex-row sm:justify-between">
           <Button type="button" variant="outline" onClick={handleBack} disabled={isFirstStep}>
             Back
           </Button>

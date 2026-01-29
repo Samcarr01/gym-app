@@ -1,8 +1,16 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Space_Grotesk, Manrope } from 'next/font/google';
 import '@/styles/globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const display = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-display'
+});
+
+const body = Manrope({
+  subsets: ['latin'],
+  variable: '--font-body'
+});
 
 export const metadata: Metadata = {
   title: 'AI Gym Plan Builder',
@@ -27,7 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${display.variable} ${body.variable} font-body antialiased`}>
         <div className="app-shell">
           <div className="app-bg" />
           <div className="app-blob app-blob-1" />

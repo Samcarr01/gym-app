@@ -6,15 +6,15 @@
   :root {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
-    --card: 224 71% 6%;
+    --card: 224 62% 8%;
     --card-foreground: 213 31% 91%;
-    --popover: 224 71% 6%;
+    --popover: 224 62% 8%;
     --popover-foreground: 213 31% 91%;
     --primary: 142 76% 36%;
     --primary-foreground: 355 100% 97%;
-    --secondary: 215 28% 17%;
+    --secondary: 215 30% 18%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 223 47% 11%;
+    --muted: 223 40% 12%;
     --muted-foreground: 215 20% 65%;
     --accent: 216 34% 17%;
     --accent-foreground: 210 40% 98%;
@@ -23,7 +23,7 @@
     --border: 216 34% 17%;
     --input: 216 34% 17%;
     --ring: 142 76% 36%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 }
 
@@ -32,7 +32,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--font-display);
   }
 }
 
@@ -48,9 +55,10 @@
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(circle at top, hsl(var(--primary) / 0.18), transparent 50%),
-    radial-gradient(circle at 20% 40%, hsl(162 84% 45% / 0.12), transparent 45%),
-    radial-gradient(circle at 80% 20%, hsl(210 100% 60% / 0.12), transparent 40%);
+    radial-gradient(circle at top, hsl(var(--primary) / 0.2), transparent 55%),
+    radial-gradient(circle at 15% 35%, hsl(162 84% 45% / 0.14), transparent 50%),
+    radial-gradient(circle at 80% 20%, hsl(200 100% 60% / 0.14), transparent 45%),
+    linear-gradient(180deg, hsl(224 71% 4% / 0.96), transparent 35%);
 }
 
 .app-blob {
@@ -91,6 +99,9 @@
 }
 
 @layer utilities {
+  .font-body {
+    font-family: var(--font-body);
+  }
   .animate-fade-in {
     animation: fadeIn 0.3s ease-in-out;
   }
@@ -105,6 +116,21 @@
   }
   .animate-pulse-soft {
     animation: pulseSoft 2.6s ease-in-out infinite;
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply mx-auto w-full max-w-6xl px-6;
+  }
+  .section-kicker {
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-primary;
+  }
+  .glass-panel {
+    @apply rounded-2xl border border-border/60 bg-card/75 backdrop-blur-xl shadow-[0_25px_60px_-45px_rgba(0,0,0,0.8)];
+  }
+  .soft-card {
+    @apply rounded-2xl border border-border/50 bg-muted/30;
   }
 }
 

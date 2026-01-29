@@ -18,39 +18,39 @@ export function WorkoutDay({ day }: WorkoutDayProps) {
       {/* Header - Always visible */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-4 md:p-5 flex items-center justify-between hover:bg-accent/50 transition-colors"
+        className="w-full p-4 md:p-5 flex items-center justify-between hover:bg-muted/40 transition-colors group"
       >
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-xl font-bold text-primary">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
+            <span className="text-xl font-semibold text-primary">
               {day.dayNumber}
             </span>
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-base md:text-lg">{day.name}</h3>
+            <h3 className="font-display font-semibold text-base md:text-lg">{day.name}</h3>
             <p className="text-sm text-muted-foreground">{day.focus}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <Badge variant="outline" className="hidden md:flex">
+          <Badge variant="outline" className="hidden md:flex tracking-normal normal-case">
             <Clock className="h-3 w-3 mr-1" />
             {day.duration}
           </Badge>
-          <Badge variant="secondary">
+          <Badge variant="secondary" className="tracking-normal normal-case">
             <Dumbbell className="h-3 w-3 mr-1" />
             {day.exercises.length}
           </Badge>
           {isOpen ? (
-            <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            <ChevronUp className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
           ) : (
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            <ChevronDown className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
           )}
         </div>
       </button>
 
       {/* Content - Collapsible */}
       {isOpen && (
-        <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-5 border-t">
+        <div className="px-4 md:px-5 pb-4 md:pb-5 space-y-5 border-t border-border/50">
           {/* Warm-up */}
           <div className="pt-4">
             <div className="flex items-center gap-2 mb-3">
@@ -77,7 +77,7 @@ export function WorkoutDay({ day }: WorkoutDayProps) {
             {day.exercises.map((exercise, idx) => (
               <div
                 key={idx}
-                className="p-4 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 space-y-3"
+                className="p-4 rounded-xl bg-gradient-to-br from-muted/40 to-muted/20 border border-border/40 space-y-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -86,7 +86,7 @@ export function WorkoutDay({ day }: WorkoutDayProps) {
                     </span>
                     <h5 className="font-medium">{exercise.name}</h5>
                   </div>
-                  <Badge variant="secondary" className="font-mono text-sm flex-shrink-0">
+                  <Badge variant="secondary" className="font-mono text-sm flex-shrink-0 tracking-normal normal-case">
                     {exercise.sets} x {exercise.reps}
                   </Badge>
                 </div>

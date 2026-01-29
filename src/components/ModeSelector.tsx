@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { PlusCircle, RefreshCw } from 'lucide-react';
+import { ArrowUpRight, PlusCircle, RefreshCw } from 'lucide-react';
 
 interface ModeCardProps {
   title: string;
@@ -14,15 +14,18 @@ interface ModeCardProps {
 function ModeCard({ title, description, icon, href }: ModeCardProps) {
   return (
     <Link href={href}>
-      <Card className="p-6 hover:border-primary transition-colors cursor-pointer group">
+      <Card className="p-6 hover:border-primary/50 transition-all hover:-translate-y-1 cursor-pointer group">
         <div className="flex items-start gap-4">
-          <div className="p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+          <div className="p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
             {icon}
           </div>
           <div>
-            <h2 className="font-semibold text-lg">{title}</h2>
-            <p className="text-muted-foreground text-sm mt-1">{description}</p>
+            <h2 className="font-display font-semibold text-lg">{title}</h2>
+            <p className="text-muted-foreground text-sm mt-2 leading-relaxed">{description}</p>
           </div>
+        </div>
+        <div className="mt-6 inline-flex items-center gap-2 text-sm text-primary">
+          Continue <ArrowUpRight className="h-4 w-4" />
         </div>
       </Card>
     </Link>

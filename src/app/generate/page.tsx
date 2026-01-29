@@ -7,6 +7,8 @@ import { generatePlanStream, QualityReport } from '@/lib/api';
 import { PlanViewer } from '@/components/PlanViewer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 
 type PageState = 'loading' | 'success' | 'error';
 
@@ -105,30 +107,34 @@ export default function GeneratePage() {
   };
 
   return (
-    <main className="min-h-screen p-6">
-      <div className="max-w-4xl mx-auto">
-        {state === 'loading' && (
-          <LoadingState
-            elapsedSeconds={elapsedSeconds}
-            progress={progress}
-            statusMessage={statusMessage}
-            statusStage={statusStage}
-          />
-        )}
-        {state === 'success' && plan && (
-          <>
-            {qualityReport && <QualityBadge report={qualityReport} onRegenerate={handleRetry} />}
-            <PlanViewer plan={plan} />
-          </>
-        )}
-        {state === 'error' && (
-          <ErrorState
-            message={error}
-            onRetry={handleRetry}
-            onStartOver={handleStartOver}
-          />
-        )}
+    <main className="min-h-screen flex flex-col">
+      <SiteHeader />
+      <div className="page-container flex-1 py-12 md:py-16">
+        <div className="max-w-5xl mx-auto">
+          {state === 'loading' && (
+            <LoadingState
+              elapsedSeconds={elapsedSeconds}
+              progress={progress}
+              statusMessage={statusMessage}
+              statusStage={statusStage}
+            />
+          )}
+          {state === 'success' && plan && (
+            <>
+              {qualityReport && <QualityBadge report={qualityReport} onRegenerate={handleRetry} />}
+              <PlanViewer plan={plan} />
+            </>
+          )}
+          {state === 'error' && (
+            <ErrorState
+              message={error}
+              onRetry={handleRetry}
+              onStartOver={handleStartOver}
+            />
+          )}
+        </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }
@@ -160,7 +166,7 @@ function LoadingState({
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="relative w-full max-w-2xl">
         <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/20 via-emerald-400/5 to-transparent blur-2xl" />
-        <div className="relative rounded-2xl border bg-card/80 backdrop-blur p-8 md:p-10 space-y-8">
+        <div className="relative glass-panel p-8 md:p-10 space-y-8">
           <div className="flex items-center gap-4">
             <div className="relative h-14 w-14">
               <div className="absolute inset-0 rounded-full bg-primary/20 blur-md" />
