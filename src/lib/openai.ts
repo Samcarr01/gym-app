@@ -120,17 +120,22 @@ export async function generatePlan(
   questionnaire: QuestionnaireData,
   existingPlan?: string
 ): Promise<GeneratedPlanWithReport> {
+  const startTime = Date.now();
+  const MAX_TIME_MS = 240000; // 4 minutes - leave buffer for Vercel's 5 min timeout
+
   const openai = getOpenAIClient();
   const { system, user } = buildPrompt(questionnaire, existingPlan);
   const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
 
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 2; // Reduced from 3 to stay within timeout
   const qualityReport: QualityReport = {
     firstAttempt: { valid: false, issues: [] },
     retryAttempts: [],
     finalStatus: 'failed_but_returned',
     totalAttempts: 0
   };
+
+  const isTimeRunningOut = () => Date.now() - startTime > MAX_TIME_MS;
 
   const response = await openai.responses.create({
     model,
@@ -187,8 +192,12 @@ export async function generatePlan(
 
   if (firstValidation.valid) {
     qualityReport.finalStatus = 'passed';
-    const refined = await refinePlanIfNeeded(openai, model, system, user, normalized, questionnaire);
-    const fixed = fixBannedPhrases(refined);
+    // Only refine if we have time - refinement is optional enhancement
+    let finalPlan = normalized;
+    if (!isTimeRunningOut()) {
+      finalPlan = await refinePlanIfNeeded(openai, model, system, user, normalized, questionnaire);
+    }
+    const fixed = fixBannedPhrases(finalPlan);
     return { plan: fixed, qualityReport };
   }
 
@@ -197,6 +206,11 @@ export async function generatePlan(
   let currentIssues = firstValidation.issues;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    // Check time before starting a retry
+    if (isTimeRunningOut()) {
+      break;
+    }
+
     qualityReport.totalAttempts++;
 
     const retryResult = await retryWithQualityFeedback(
@@ -208,22 +222,21 @@ export async function generatePlan(
 
     if (retryValidation.valid) {
       qualityReport.finalStatus = 'passed';
-      const refined = await refinePlanIfNeeded(openai, model, system, user, retryResult, questionnaire);
-      const fixed = fixBannedPhrases(refined);
+      // Skip refinement after retries - the retry prompt already includes corrections
+      const fixed = fixBannedPhrases(retryResult);
       return { plan: fixed, qualityReport };
     }
 
-    // Check if issues improved
+    // Check if issues improved - keep the better plan
     if (retryValidation.issues.length < currentIssues.length) {
       currentPlan = retryResult;
       currentIssues = retryValidation.issues;
     }
   }
 
-  // All retries failed - return best attempt with post-processing fixes
+  // Return best attempt with post-processing fixes (skip refinement to save time)
   qualityReport.finalStatus = currentIssues.length <= 3 ? 'passed_with_issues' : 'failed_but_returned';
-  const refined = await refinePlanIfNeeded(openai, model, system, user, currentPlan, questionnaire);
-  const fixed = fixBannedPhrases(refined);
+  const fixed = fixBannedPhrases(currentPlan);
 
   return { plan: fixed, qualityReport };
 }
