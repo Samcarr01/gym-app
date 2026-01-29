@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { generatePlan } from '@/lib/openai';
-import { GeneratePlanRequestSchema } from '@/lib/types';
+import { generatePlan, QualityReport } from '@/lib/openai';
+import { GeneratePlanRequestSchema, GeneratedPlan } from '@/lib/types';
 
 // Allow more time for plan generation on Vercel
 export const maxDuration = 300;
@@ -10,6 +10,11 @@ type ProgressPayload = {
   progress: number;
   stage: string;
   message: string;
+};
+
+type ResultPayload = {
+  plan: GeneratedPlan;
+  qualityReport: QualityReport;
 };
 
 function sanitizeStringArray(value: unknown): string[] {
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const send = (event: string, data: ProgressPayload | { plan: unknown } | { message: string }) => {
+      const send = (event: string, data: ProgressPayload | ResultPayload | { message: string }) => {
         controller.enqueue(
           encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
         );
@@ -113,11 +118,11 @@ export async function POST(request: NextRequest) {
 
         try {
           sendProgress(25, 'generate', 'Contacting AI model');
-          const plan = await generatePlan(questionnaire, existingPlan);
+          const { plan, qualityReport } = await generatePlan(questionnaire, existingPlan);
           clearInterval(ticker);
           sendProgress(95, 'finalize', 'Finalizing plan');
           sendProgress(100, 'complete', 'Plan ready');
-          send('result', { plan });
+          send('result', { plan, qualityReport });
         } catch (error) {
           clearInterval(ticker);
           console.error('Generate plan error:', error);

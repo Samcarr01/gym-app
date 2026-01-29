@@ -132,10 +132,23 @@ EVERY exercise must include:
    - Reference their weak points, injuries, equipment, or preferences
    - Explain substitutions (e.g., "Using DB press instead of barbell due to shoulder injury")
    - Note if it's a favorite exercise maintained for adherence
-3. **progressionNote**: How THIS user should progress THIS movement
-   - Beginner: "Add 2.5kg each session when you can complete all sets at top of rep range"
-   - Intermediate: "Wave load: 60kg week 1, 62.5kg week 2, 65kg week 3, deload week 4"
-   - Advanced: "Autoregulate based on RPE, stay 1-2 reps from failure, add load when RPE drops"
+3. **progressionNote**: How THIS user should progress THIS movement (MINIMUM 30 CHARACTERS REQUIRED)
+
+   📈 PROGRESSION NOTE REQUIREMENTS:
+   - MUST start with "📈" emoji
+   - MUST be at least 30 characters long
+   - MUST include specific weight increments or rep targets
+   - MUST include deload guidance
+
+   GOOD EXAMPLES (copy this format):
+   - Beginner: "📈 Add 2.5kg each session when all sets hit 10+ reps with good form. Deload 10% after 4-6 weeks or if form breaks."
+   - Intermediate: "📈 Wave load over 4 weeks: Week 1 at 75%, Week 2 at 80%, Week 3 at 85%, Week 4 deload at 60%. Increase starting weight 2.5kg each cycle."
+   - Advanced: "📈 Autoregulate by RPE: stay at RPE 7-8 for work sets, add 2.5kg when average RPE drops below 7. Deload when RPE exceeds 9 for 2 sessions."
+
+   BAD EXAMPLES (THESE WILL FAIL VALIDATION):
+   ❌ "Progress gradually" - TOO SHORT, NO SPECIFICS
+   ❌ "Add weight when ready" - TOO VAGUE, NO DELOAD
+   ❌ "Progress at your own pace" - NOT ACTIONABLE
 
 EXAMPLES OF GOOD RATIONALE:
 - "Targeting your weak upper back strength mentioned in questionnaire"

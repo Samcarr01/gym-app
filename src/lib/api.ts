@@ -1,8 +1,22 @@
 import { QuestionnaireData, GeneratedPlan } from '@/lib/types';
 
+// Quality report types (matching server)
+export interface ValidationAttempt {
+  valid: boolean;
+  issues: string[];
+}
+
+export interface QualityReport {
+  firstAttempt: ValidationAttempt;
+  retryAttempts: ValidationAttempt[];
+  finalStatus: 'passed' | 'passed_with_issues' | 'failed_but_returned';
+  totalAttempts: number;
+}
+
 interface ApiResponse {
   success: boolean;
   plan?: GeneratedPlan;
+  qualityReport?: QualityReport;
   error?: {
     code: string;
     message: string;
@@ -15,10 +29,15 @@ export interface GeneratePlanProgress {
   message: string;
 }
 
+export interface GeneratePlanResult {
+  plan: GeneratedPlan;
+  qualityReport: QualityReport;
+}
+
 export async function generatePlanAPI(
   questionnaire: QuestionnaireData,
   existingPlan?: string
-): Promise<GeneratedPlan> {
+): Promise<GeneratePlanResult> {
   const response = await fetch('/api/generate-plan', {
     method: 'POST',
     headers: {
@@ -29,18 +48,18 @@ export async function generatePlanAPI(
 
   const data: ApiResponse = await response.json();
 
-  if (!data.success || !data.plan) {
+  if (!data.success || !data.plan || !data.qualityReport) {
     throw new Error(data.error?.message || 'Failed to generate plan');
   }
 
-  return data.plan;
+  return { plan: data.plan, qualityReport: data.qualityReport };
 }
 
 export async function generatePlanStream(
   questionnaire: QuestionnaireData,
   existingPlan: string | undefined,
   onProgress?: (progress: GeneratePlanProgress) => void
-): Promise<GeneratedPlan> {
+): Promise<GeneratePlanResult> {
   const response = await fetch('/api/generate-plan/stream', {
     method: 'POST',
     headers: {
@@ -90,7 +109,10 @@ export async function generatePlanStream(
       } else if (event === 'error') {
         throw new Error(data.message || 'Failed to generate plan');
       } else if (event === 'result') {
-        return data.plan as GeneratedPlan;
+        return {
+          plan: data.plan as GeneratedPlan,
+          qualityReport: data.qualityReport as QualityReport
+        };
       }
     }
   }

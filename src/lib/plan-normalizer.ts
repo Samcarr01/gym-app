@@ -420,7 +420,7 @@ function fillExercisesToExactCount(
         rationale: 'Added to complete the workout and increase training volume.',
         notes: 'Use a controlled tempo and focus on form.',
         substitutions: [],
-        progressionNote: 'Add weight when all sets feel easy with good form.'
+        progressionNote: '📈 Add 2.5kg when completing all sets at top of rep range. Deload 10% after 4 weeks.'
       });
       globalUsed.add(name.toLowerCase());
     }
@@ -504,7 +504,7 @@ function ensureMandatoryExercises(
       rationale: `Selected as a core compound movement to align with your ${item.focus} training focus.`,
       notes: template?.notes ?? 'Use controlled form and progressive overload.',
       substitutions: template?.substitutions ?? [],
-      progressionNote: template?.progressionNote ?? 'Add weight when you can complete all sets with good form.'
+      progressionNote: template?.progressionNote && template.progressionNote.length >= 20 ? template.progressionNote : '📈 Add 2.5kg when completing 3 sets at top of rep range. Deload 10% every 4-6 weeks.'
     };
 
     if (maxExercises && day.exercises.length >= maxExercises) {
@@ -547,7 +547,7 @@ function ensureTargetExercises(
       rationale: `Specifically chosen to target ${target.name} as mentioned in your specific goals.`,
       notes: template?.notes ?? 'Use a controlled tempo and focus on form.',
       substitutions: template?.substitutions ?? [],
-      progressionNote: template?.progressionNote ?? 'Progress gradually as strength improves.'
+      progressionNote: template?.progressionNote && template.progressionNote.length >= 20 ? template.progressionNote : '📈 Add 1-2 reps per session, then increase weight by 2.5kg and reset reps. Deload every 4 weeks.'
     };
 
     if (maxExercises && day.exercises.length >= maxExercises) {
@@ -631,7 +631,7 @@ function includeFavouriteExercises(
       rationale: 'Maintained as a favorite exercise to support adherence and enjoyment.',
       notes: template?.notes ?? 'Adjust load and form to your comfort and equipment.',
       substitutions: template?.substitutions ?? [],
-      progressionNote: template?.progressionNote ?? 'Progress at your own pace while maintaining good form.'
+      progressionNote: template?.progressionNote && template.progressionNote.length >= 20 ? template.progressionNote : '📈 Track weights; aim to add 1-2 reps or 1-2.5kg each week. Deload when form breaks down.'
     };
 
     if (maxExercises && day.exercises.length >= maxExercises) {
@@ -763,7 +763,7 @@ function buildSportExercise(
     rationale: intent, // Fallback: use intent as rationale if not provided by AI
     notes,
     substitutions: [],
-    progressionNote: 'Progress when exercise feels easier and form is solid'
+    progressionNote: '📈 Progress when movement feels controlled. Add duration/reps by 10% every 2 weeks.'
   };
 }
 
@@ -842,7 +842,7 @@ function ensureWeakPointExercises(
       rationale: 'Specifically targeting your identified weak point for balanced development.',
       notes: template?.notes ?? 'Use a controlled tempo and full range of motion.',
       substitutions: [],
-      progressionNote: template?.progressionNote ?? 'Progress gradually, focusing on quality over quantity.'
+      progressionNote: template?.progressionNote && template.progressionNote.length >= 20 ? template.progressionNote : '📈 Increase reps or weight by 5-10% when all sets complete with good form. Deload every 4 weeks.'
     };
 
     replaceOrAppendExercise(day, exercise, maxExercises, protectedKeywords);

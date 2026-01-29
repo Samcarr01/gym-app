@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GeneratedPlan, QuestionnaireData } from '@/lib/types';
-import { generatePlanStream } from '@/lib/api';
+import { generatePlanStream, QualityReport } from '@/lib/api';
 import { PlanViewer } from '@/components/PlanViewer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,6 +14,7 @@ export default function GeneratePage() {
   const router = useRouter();
   const [state, setState] = useState<PageState>('loading');
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
+  const [qualityReport, setQualityReport] = useState<QualityReport | null>(null);
   const [error, setError] = useState<string>('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -37,7 +38,7 @@ export default function GeneratePage() {
           existingPlan?: string;
         };
 
-        const generatedPlan = await generatePlanStream(
+        const result = await generatePlanStream(
           questionnaire,
           existingPlan,
           (update) => {
@@ -46,8 +47,23 @@ export default function GeneratePage() {
             setStatusStage(update.stage || 'working');
           }
         );
-        setPlan(generatedPlan);
+        setPlan(result.plan);
+        setQualityReport(result.qualityReport);
         setState('success');
+
+        // Log quality report to browser console for debugging
+        console.group('Plan Quality Report');
+        console.log('First attempt:', result.qualityReport.firstAttempt.valid ? 'PASSED' : `FAILED (${result.qualityReport.firstAttempt.issues.length} issues)`);
+        if (!result.qualityReport.firstAttempt.valid) {
+          console.log('Issues:', result.qualityReport.firstAttempt.issues);
+        }
+        result.qualityReport.retryAttempts.forEach((attempt, i) => {
+          console.log(`Retry ${i + 1}:`, attempt.valid ? 'PASSED' : `FAILED (${attempt.issues.length} issues)`);
+          if (!attempt.valid) console.log('Issues:', attempt.issues);
+        });
+        console.log('Final status:', result.qualityReport.finalStatus);
+        console.log('Total attempts:', result.qualityReport.totalAttempts);
+        console.groupEnd();
 
         // Clear session storage after successful generation
         sessionStorage.removeItem('questionnaire-data');
@@ -74,6 +90,7 @@ export default function GeneratePage() {
   const handleRetry = () => {
     setState('loading');
     setError('');
+    setQualityReport(null);
     setElapsedSeconds(0);
     setProgress(0);
     setStatusMessage('Starting...');
@@ -98,7 +115,12 @@ export default function GeneratePage() {
             statusStage={statusStage}
           />
         )}
-        {state === 'success' && plan && <PlanViewer plan={plan} />}
+        {state === 'success' && plan && (
+          <>
+            {qualityReport && <QualityBadge report={qualityReport} onRegenerate={handleRetry} />}
+            <PlanViewer plan={plan} />
+          </>
+        )}
         {state === 'error' && (
           <ErrorState
             message={error}
@@ -200,6 +222,112 @@ function LoadingState({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function QualityBadge({
+  report,
+  onRegenerate
+}: {
+  report: QualityReport;
+  onRegenerate: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const getBadgeConfig = () => {
+    switch (report.finalStatus) {
+      case 'passed':
+        return {
+          icon: '✓',
+          label: 'Quality Validated',
+          bgClass: 'bg-emerald-500/10 border-emerald-500/30',
+          textClass: 'text-emerald-400',
+          showDetails: false
+        };
+      case 'passed_with_issues':
+        const issueCount = report.retryAttempts.length > 0
+          ? report.retryAttempts[report.retryAttempts.length - 1].issues.length
+          : report.firstAttempt.issues.length;
+        return {
+          icon: '⚠',
+          label: `${issueCount} minor issue${issueCount !== 1 ? 's' : ''} detected`,
+          bgClass: 'bg-amber-500/10 border-amber-500/30',
+          textClass: 'text-amber-400',
+          showDetails: true
+        };
+      case 'failed_but_returned':
+        return {
+          icon: '✗',
+          label: 'Quality issues - consider regenerating',
+          bgClass: 'bg-red-500/10 border-red-500/30',
+          textClass: 'text-red-400',
+          showDetails: true
+        };
+    }
+  };
+
+  const config = getBadgeConfig();
+
+  const getAllIssues = () => {
+    const issues: string[] = [];
+    if (!report.firstAttempt.valid) {
+      issues.push(...report.firstAttempt.issues);
+    }
+    report.retryAttempts.forEach((attempt, i) => {
+      if (!attempt.valid) {
+        attempt.issues.forEach(issue => {
+          if (!issues.includes(issue)) issues.push(issue);
+        });
+      }
+    });
+    // Return only the issues from the final attempt
+    if (report.retryAttempts.length > 0) {
+      return report.retryAttempts[report.retryAttempts.length - 1].issues;
+    }
+    return report.firstAttempt.issues;
+  };
+
+  const finalIssues = getAllIssues();
+
+  return (
+    <div className="mb-6">
+      <div
+        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${config.bgClass} cursor-pointer transition-all hover:opacity-80`}
+        onClick={() => config.showDetails && setExpanded(!expanded)}
+      >
+        <span className={`text-lg ${config.textClass}`}>{config.icon}</span>
+        <span className={`text-sm font-medium ${config.textClass}`}>{config.label}</span>
+        {config.showDetails && (
+          <span className={`text-xs ${config.textClass} ml-1`}>
+            {expanded ? '▼' : '▶'}
+          </span>
+        )}
+        <span className="text-xs text-muted-foreground ml-2">
+          ({report.totalAttempts} attempt{report.totalAttempts !== 1 ? 's' : ''})
+        </span>
+      </div>
+
+      {expanded && finalIssues.length > 0 && (
+        <div className="mt-3 p-4 rounded-lg border border-border/60 bg-muted/30 space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Issues detected:</p>
+          <ul className="space-y-1.5">
+            {finalIssues.map((issue, i) => (
+              <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5">•</span>
+                <span>{issue}</span>
+              </li>
+            ))}
+          </ul>
+          {report.finalStatus === 'failed_but_returned' && (
+            <div className="pt-2 border-t border-border/60">
+              <Button variant="outline" size="sm" onClick={onRegenerate}>
+                Regenerate Plan
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generatePlan } from '@/lib/openai';
-import { GeneratePlanRequestSchema } from '@/lib/types';
+import { generatePlan, QualityReport } from '@/lib/openai';
+import { GeneratePlanRequestSchema, GeneratedPlan } from '@/lib/types';
 
 // Allow more time for plan generation on Vercel
 export const maxDuration = 300;
@@ -120,11 +120,12 @@ export async function POST(request: NextRequest) {
     const { questionnaire, existingPlan } = parsed.data;
 
     // Generate the plan
-    const plan = await generatePlan(questionnaire, existingPlan);
+    const { plan, qualityReport } = await generatePlan(questionnaire, existingPlan);
 
     return NextResponse.json({
       success: true,
-      plan
+      plan,
+      qualityReport
     });
 
   } catch (error) {
