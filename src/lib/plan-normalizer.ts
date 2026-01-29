@@ -685,55 +685,147 @@ function buildNutritionNotes(questionnaire: QuestionnaireData): string {
   const isVegan = restrictions.some(r => r.toLowerCase().includes('vegan'));
   const isVegetarian = restrictions.some(r => r.toLowerCase().includes('vegetarian'));
 
-  // Check for disliked foods
+  // Helper to check if user dislikes something (specific food or category)
   const dislikesLower = dislikedFoods.map(f => f.toLowerCase());
-  const dislikesFish = dislikesLower.some(f => f.includes('fish') || f.includes('salmon') || f.includes('seafood'));
-  const dislikesChicken = dislikesLower.some(f => f.includes('chicken'));
-  const dislikesBeef = dislikesLower.some(f => f.includes('beef') || f.includes('steak'));
-  const dislikesEggs = dislikesLower.some(f => f.includes('egg'));
-  const dislikesRice = dislikesLower.some(f => f.includes('rice'));
+  const checkDislikes = (keywords: string[]) =>
+    dislikesLower.some(f => keywords.some(k => f.includes(k)));
+
+  // Check for disliked foods - both specific items AND categories
+  const dislikesFish = checkDislikes(['fish', 'salmon', 'tuna', 'cod', 'seafood', 'sea food']);
+  const dislikesChicken = checkDislikes(['chicken', 'poultry']);
+  const dislikesBeef = checkDislikes(['beef', 'steak', 'red meat', 'redmeat']);
+  const dislikesPork = checkDislikes(['pork', 'bacon', 'ham']);
+  const dislikesTurkey = checkDislikes(['turkey']);
+  const dislikesEggs = checkDislikes(['egg', 'eggs']);
+  const dislikesRice = checkDislikes(['rice']);
+  const dislikesPasta = checkDislikes(['pasta', 'noodle', 'spaghetti']);
+  const dislikesBread = checkDislikes(['bread', 'toast']);
+  const dislikesFruit = checkDislikes(['fruit', 'fruits', 'apple', 'banana', 'berries', 'orange']);
+  const dislikesYogurt = checkDislikes(['yogurt', 'yoghurt']);
+  const dislikesDairy = isDairy || checkDislikes(['dairy', 'milk', 'cheese', 'lactose']);
+  const dislikesTofu = checkDislikes(['tofu', 'soy', 'soya']);
+  const dislikesOats = checkDislikes(['oat', 'oatmeal', 'porridge']);
+  const dislikesPotato = checkDislikes(['potato', 'potatoes', 'sweet potato']);
+  const dislikesVegetables = checkDislikes(['vegetable', 'vegetables', 'veggies', 'greens', 'broccoli', 'spinach']);
+
+  // Helper to check if user likes something (specific food or category)
+  const favoritesLower = favoriteFoods.map(f => f.toLowerCase());
+  const checkLikes = (keywords: string[]) =>
+    favoritesLower.some(f => keywords.some(k => f.includes(k)));
 
   // Check for favorite foods to include
-  const favoritesLower = favoriteFoods.map(f => f.toLowerCase());
-  const likesTurkey = favoritesLower.some(f => f.includes('turkey'));
-  const likesTofu = favoritesLower.some(f => f.includes('tofu'));
-  const likesYogurt = favoritesLower.some(f => f.includes('yogurt'));
+  const likesTurkey = checkLikes(['turkey']);
+  const likesTofu = checkLikes(['tofu', 'soy']);
+  const likesYogurt = checkLikes(['yogurt', 'yoghurt']);
+  const likesChicken = checkLikes(['chicken', 'poultry']);
+  const likesFish = checkLikes(['fish', 'salmon', 'tuna', 'seafood']);
+  const likesBeef = checkLikes(['beef', 'steak', 'red meat']);
+  const likesEggs = checkLikes(['egg', 'eggs']);
+  const likesRice = checkLikes(['rice']);
+  const likesPasta = checkLikes(['pasta', 'noodle']);
+  const likesOats = checkLikes(['oat', 'oatmeal', 'porridge']);
+  const likesPotato = checkLikes(['potato', 'sweet potato']);
 
-  // Build protein sources based on preferences
+  // Build protein sources based on preferences (respects both specific foods and categories)
   const getBreakfastProtein = (): string => {
-    if (isVegan) return 'tofu scramble with vegetables';
-    if (isVegetarian) return dislikesEggs ? '200g Greek yogurt with nuts' : '4 eggs scrambled';
-    if (dislikesEggs && dislikesChicken) return likesTurkey ? '150g turkey sausage' : '200g Greek yogurt';
-    if (dislikesEggs) return '150g chicken breast';
+    if (isVegan) return dislikesTofu ? 'protein shake with plant milk' : 'tofu scramble with vegetables';
+    if (isVegetarian) {
+      if (dislikesEggs && (dislikesYogurt || dislikesDairy)) return 'protein shake';
+      if (dislikesEggs) return '200g Greek yogurt with nuts';
+      return '4 eggs scrambled';
+    }
+    // Non-vegetarian options
+    if (likesEggs && !dislikesEggs) return '4 eggs scrambled';
+    if (likesChicken && !dislikesChicken) return '150g chicken breast';
+    if (likesTurkey && !dislikesTurkey) return '150g turkey sausage';
+    if (dislikesEggs && dislikesChicken && dislikesTurkey) {
+      if (!dislikesYogurt && !dislikesDairy) return '200g Greek yogurt';
+      return 'protein shake';
+    }
+    if (dislikesEggs) return dislikesChicken ? '150g turkey sausage' : '150g chicken breast';
     if (dislikesChicken) return '4 eggs scrambled';
     return '4 eggs or 150g chicken breast';
   };
 
   const getLunchProtein = (): string => {
-    if (isVegan) return '200g tempeh or seitan';
-    if (isVegetarian) return '200g cottage cheese or eggs';
-    if (dislikesChicken && dislikesFish) return likesTurkey ? '200g ground turkey' : '200g lean beef';
+    if (isVegan) return dislikesTofu ? '200g lentils or beans' : '200g tempeh or seitan';
+    if (isVegetarian) {
+      if (dislikesEggs && dislikesDairy) return '200g lentils with quinoa';
+      return '200g cottage cheese or eggs';
+    }
+    // Non-vegetarian - check favorites first
+    if (likesChicken && !dislikesChicken) return '200g grilled chicken breast';
+    if (likesFish && !dislikesFish) return '200g grilled fish';
+    if (likesTurkey && !dislikesTurkey) return '200g ground turkey';
+    if (likesBeef && !dislikesBeef) return '200g lean beef';
+    // Fallback based on dislikes
+    if (dislikesChicken && dislikesFish && dislikesBeef) {
+      return dislikesTurkey ? '200g pork loin' : '200g ground turkey';
+    }
+    if (dislikesChicken && dislikesFish) return dislikesBeef ? '200g ground turkey' : '200g lean beef';
     if (dislikesChicken) return dislikesFish ? '200g lean beef' : '200g grilled fish';
     return '200g grilled chicken breast';
   };
 
   const getDinnerProtein = (): string => {
-    if (isVegan) return '200g tofu or legumes';
-    if (isVegetarian) return likesYogurt ? '200g Greek yogurt with lentils' : '200g cottage cheese or eggs';
-    if (dislikesFish && dislikesBeef) return likesTurkey ? '200g turkey breast' : '200g chicken thighs';
+    if (isVegan) return dislikesTofu ? '200g lentils or chickpeas' : '200g tofu or legumes';
+    if (isVegetarian) {
+      if (dislikesYogurt || dislikesDairy) return '200g lentil curry';
+      return likesYogurt ? '200g Greek yogurt with lentils' : '200g cottage cheese or eggs';
+    }
+    // Non-vegetarian - check favorites first
+    if (likesFish && !dislikesFish) return '200g salmon';
+    if (likesBeef && !dislikesBeef) return '200g lean beef';
+    if (likesChicken && !dislikesChicken) return '200g chicken thighs';
+    if (likesTurkey && !dislikesTurkey) return '200g turkey breast';
+    // Fallback based on dislikes
+    if (dislikesFish && dislikesBeef && dislikesChicken) {
+      return dislikesTurkey ? '200g pork tenderloin' : '200g turkey breast';
+    }
+    if (dislikesFish && dislikesBeef) return dislikesTurkey ? '200g chicken thighs' : '200g turkey breast';
     if (dislikesFish) return dislikesBeef ? '200g chicken thighs' : '200g lean beef';
     if (dislikesBeef) return '200g salmon';
     return '200g salmon or lean beef';
   };
 
   const getSnackProtein = (): string => {
-    if (hasNuts) return likesYogurt ? 'Greek yogurt or protein shake' : 'protein shake';
+    if (dislikesYogurt || dislikesDairy) {
+      return hasNuts ? 'protein shake' : 'handful of almonds or protein shake';
+    }
+    if (hasNuts) return 'Greek yogurt or protein shake';
     return 'handful of almonds or protein shake';
   };
 
+  const getBreakfastCarb = (): string => {
+    if (likesPasta && !dislikesPasta) return 'whole grain toast';
+    if (likesOats && !dislikesOats) return 'oatmeal';
+    if (dislikesBread && dislikesOats) return '1 banana';
+    if (dislikesBread) return 'oatmeal';
+    return '2 slices whole grain toast';
+  };
+
+  const getBreakfastFruit = (): string => {
+    if (dislikesFruit) return '';
+    return ', 1 banana';
+  };
+
   const getCarbSource = (): string => {
-    if (dislikesRice) return 'quinoa or sweet potato';
+    if (likesRice && !dislikesRice) return 'rice';
+    if (likesPasta && !dislikesPasta) return 'pasta';
+    if (likesPotato && !dislikesPotato) return 'potato';
+    if (dislikesRice && dislikesPasta) return dislikesPotato ? 'quinoa' : 'sweet potato';
+    if (dislikesRice) return dislikesPasta ? 'quinoa or sweet potato' : 'pasta';
     return 'rice';
+  };
+
+  const getVeggies = (): string => {
+    if (dislikesVegetables) return 'side salad';
+    return 'mixed vegetables';
+  };
+
+  const getSnackFruit = (): string => {
+    if (dislikesFruit) return '';
+    return ', piece of fruit';
   };
 
   const breakfastProtein = getBreakfastProtein();
@@ -741,14 +833,19 @@ function buildNutritionNotes(questionnaire: QuestionnaireData): string {
   const dinnerProtein = getDinnerProtein();
   const snackProtein = getSnackProtein();
   const carbSource = getCarbSource();
+  const breakfastCarb = getBreakfastCarb();
+  const breakfastFruit = getBreakfastFruit();
+  const veggies = getVeggies();
+  const snackFruit = getSnackFruit();
+  const dinnerCarb = dislikesPotato ? (dislikesRice ? 'quinoa' : 'rice') : 'sweet potato';
 
   const sampleMeals = `
 
 Sample Training Day Meals:
-- Breakfast (7:00 AM): ${breakfastProtein}, 2 slices whole grain toast, 1 banana - ~35g protein
-- Lunch (12:00 PM): ${lunchProtein}, 150g ${carbSource}, mixed vegetables - ~45g protein
-- Pre-workout (4:00 PM): ${snackProtein}, piece of fruit - ~20g protein
-- Dinner (7:00 PM): ${dinnerProtein}, sweet potato, steamed broccoli - ~40g protein
+- Breakfast (7:00 AM): ${breakfastProtein}, ${breakfastCarb}${breakfastFruit} - ~35g protein
+- Lunch (12:00 PM): ${lunchProtein}, 150g ${carbSource}, ${veggies} - ~45g protein
+- Pre-workout (4:00 PM): ${snackProtein}${snackFruit} - ~20g protein
+- Dinner (7:00 PM): ${dinnerProtein}, ${dinnerCarb}, ${dislikesVegetables ? 'side salad' : 'steamed broccoli'} - ~40g protein
 
 Sample Rest Day: Reduce carbs slightly, maintain protein intake.`;
 
