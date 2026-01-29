@@ -422,8 +422,25 @@ export function buildPrompt(
   }
 
   // COACHING SYNTHESIS - Pre-analyzed insights for AI
+  const gymStatus = questionnaire.equipment.gymAccess
+    ? `✅ FULL GYM ACCESS (${questionnaire.equipment.gymType || 'commercial'}) - Use barbells, machines, cables freely`
+    : `❌ NO GYM ACCESS - Home/bodyweight only, NO barbells/machines/cables`;
+
   user += `
 ## COACHING BRIEF (Use this to personalize deeply)
+
+### ⚠️ EQUIPMENT STATUS (READ FIRST)
+**${gymStatus}**
+${questionnaire.equipment.availableEquipment.length > 0 ? `Available: ${questionnaire.equipment.availableEquipment.join(', ')}` : ''}
+${questionnaire.equipment.limitedEquipment.length > 0 ? `Limited/Unavailable: ${questionnaire.equipment.limitedEquipment.join(', ')}` : ''}
+
+${questionnaire.equipment.gymAccess ? `Since user has gym access, PREFER:
+- Barbell exercises for main lifts (Squat, Bench, Deadlift, OHP, Rows)
+- Machine exercises for isolation (Leg Curl, Leg Extension, Cable work)
+- Full range of equipment for optimal results` : `Since user has NO gym access, ONLY use:
+- Bodyweight exercises (Push-ups, Pull-ups, Dips, Lunges)
+- Dumbbell/Kettlebell variations if available
+- NO barbell, machine, or cable exercises`}
 
 ${narrative}
 
