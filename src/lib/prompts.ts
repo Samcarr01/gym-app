@@ -513,6 +513,8 @@ ${formatInjuries(questionnaire.injuries)}
 - Protein intake: ${questionnaire.nutrition.proteinIntake}
 - Dietary restrictions: ${questionnaire.nutrition.dietaryRestrictions.join(', ') || 'None'}
 - Supplements: ${questionnaire.nutrition.supplementUse.join(', ') || 'None'}
+- Favorite foods: ${questionnaire.nutrition.favoriteFoods.join(', ') || 'None specified'}
+- Disliked foods: ${questionnaire.nutrition.dislikedFoods.join(', ') || 'None'}
 
 ### Additional Constraints
 - Time constraints: ${questionnaire.constraints.timeConstraints || 'None'}

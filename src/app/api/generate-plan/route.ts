@@ -86,7 +86,9 @@ export async function POST(request: NextRequest) {
             nutrition: {
               ...body.questionnaire.nutrition,
               dietaryRestrictions: sanitizeStringArray(body.questionnaire.nutrition?.dietaryRestrictions),
-              supplementUse: sanitizeStringArray(body.questionnaire.nutrition?.supplementUse)
+              supplementUse: sanitizeStringArray(body.questionnaire.nutrition?.supplementUse),
+              favoriteFoods: sanitizeStringArray(body.questionnaire.nutrition?.favoriteFoods),
+              dislikedFoods: sanitizeStringArray(body.questionnaire.nutrition?.dislikedFoods)
             },
             preferences: {
               ...body.questionnaire.preferences,

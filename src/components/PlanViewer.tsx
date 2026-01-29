@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { WorkoutDay } from '@/components/WorkoutDay';
-import { Copy, Check, Printer, RotateCcw } from 'lucide-react';
+import { Copy, Check, Printer, RotateCcw, TrendingUp, Utensils, Moon, AlertTriangle } from 'lucide-react';
 
 interface PlanViewerProps {
   plan: GeneratedPlan;
@@ -31,11 +31,11 @@ export function PlanViewer({ plan }: PlanViewerProps) {
     <div className="space-y-8 print:space-y-4">
       {/* Header */}
       <header className="space-y-4">
-        <h1 className="text-3xl font-bold">{plan.planName}</h1>
-        <p className="text-muted-foreground text-lg">{plan.overview}</p>
+        <h1 className="text-4xl font-bold tracking-tight">{plan.planName}</h1>
         <Badge variant="secondary" className="text-sm">
           {plan.weeklyStructure}
         </Badge>
+        <p className="text-muted-foreground text-lg max-w-3xl leading-relaxed">{plan.overview}</p>
       </header>
 
       {/* Actions */}
@@ -67,7 +67,13 @@ export function PlanViewer({ plan }: PlanViewerProps) {
 
       {/* Workout Days */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Your Workouts</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-primary rounded-full" />
+          <h2 className="text-2xl font-semibold">Your Workouts</h2>
+          <Badge variant="outline" className="ml-2">
+            {plan.days.length} days
+          </Badge>
+        </div>
         {plan.days.map((day) => (
           <WorkoutDay key={day.dayNumber} day={day} />
         ))}
@@ -75,21 +81,36 @@ export function PlanViewer({ plan }: PlanViewerProps) {
 
       {/* Additional Notes */}
       <div className="grid gap-6 md:grid-cols-3 print:grid-cols-3">
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2 text-primary">📈 Progression</h3>
-          <p className="text-sm text-muted-foreground">
+        <Card className="p-5 hover:border-primary/30 transition-colors">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-emerald-500/10 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+            </div>
+            <h3 className="font-semibold text-primary">Progression</h3>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
             {plan.progressionGuidance}
           </p>
         </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2 text-primary">🥗 Nutrition</h3>
-          <p className="text-sm text-muted-foreground">
+        <Card className="p-5 hover:border-primary/30 transition-colors">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-orange-500/10 rounded-lg">
+              <Utensils className="h-5 w-5 text-orange-500" />
+            </div>
+            <h3 className="font-semibold text-primary">Nutrition</h3>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
             {plan.nutritionNotes}
           </p>
         </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2 text-primary">😴 Recovery</h3>
-          <p className="text-sm text-muted-foreground">
+        <Card className="p-5 hover:border-primary/30 transition-colors">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <Moon className="h-5 w-5 text-blue-500" />
+            </div>
+            <h3 className="font-semibold text-primary">Recovery</h3>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
             {plan.recoveryNotes}
           </p>
         </Card>
@@ -97,9 +118,12 @@ export function PlanViewer({ plan }: PlanViewerProps) {
 
       {/* Disclaimer */}
       <footer className="pt-6 border-t">
-        <p className="text-xs text-muted-foreground text-center">
-          ⚠️ {plan.disclaimer}
-        </p>
+        <div className="flex items-center justify-center gap-2 p-4 bg-amber-500/5 rounded-lg">
+          <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground text-center">
+            {plan.disclaimer}
+          </p>
+        </div>
       </footer>
     </div>
   );

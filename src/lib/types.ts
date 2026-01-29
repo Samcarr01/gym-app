@@ -102,7 +102,9 @@ export const NutritionSectionSchema = z.object({
   nutritionApproach: z.enum(['maintenance', 'surplus', 'deficit', 'intuitive']),
   proteinIntake: z.enum(['low', 'moderate', 'high', 'very_high']),
   dietaryRestrictions: z.array(z.string()).default([]),
-  supplementUse: z.array(z.string()).default([])
+  supplementUse: z.array(z.string()).default([]),
+  favoriteFoods: z.array(z.string()).default([]),
+  dislikedFoods: z.array(z.string()).default([])
 });
 
 // Preferences Section
@@ -325,7 +327,9 @@ export const DEFAULT_QUESTIONNAIRE: QuestionnaireData = {
     nutritionApproach: 'maintenance',
     proteinIntake: 'moderate',
     dietaryRestrictions: [],
-    supplementUse: []
+    supplementUse: [],
+    favoriteFoods: [],
+    dislikedFoods: []
   },
   preferences: {
     favouriteExercises: [],

@@ -71,6 +71,32 @@ export function NutritionStep() {
             {...register('nutrition.supplementUse.0')}
           />
         </div>
+
+        {/* Favorite Foods */}
+        <div className="space-y-2">
+          <Label htmlFor="favoriteFoods">Favorite Foods (Optional)</Label>
+          <Input
+            id="favoriteFoods"
+            placeholder="e.g., Chicken, rice, eggs, Greek yogurt"
+            {...register('nutrition.favoriteFoods.0')}
+          />
+          <p className="text-xs text-muted-foreground">
+            Foods you enjoy - we'll include them in meal suggestions
+          </p>
+        </div>
+
+        {/* Disliked Foods */}
+        <div className="space-y-2">
+          <Label htmlFor="dislikedFoods">Foods to Avoid (Optional)</Label>
+          <Input
+            id="dislikedFoods"
+            placeholder="e.g., Fish, mushrooms, broccoli"
+            {...register('nutrition.dislikedFoods.0')}
+          />
+          <p className="text-xs text-muted-foreground">
+            Foods you dislike or want to avoid in your meal plan
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
