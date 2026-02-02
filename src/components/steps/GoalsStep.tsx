@@ -1,10 +1,11 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
-import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
+import { Label } from '@/components/ui/label';
 import { QuestionnaireData } from '@/lib/types';
 
 export function GoalsStep() {
@@ -22,8 +23,12 @@ export function GoalsStep() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Primary Goal */}
-        <div className="space-y-2">
-          <Label htmlFor="primaryGoal">What's your main goal? *</Label>
+        <FormField
+          label="What's your main goal?"
+          htmlFor="primaryGoal"
+          required
+          error={errors.goals?.primaryGoal?.message}
+        >
           <Select
             id="primaryGoal"
             {...register('goals.primaryGoal')}
@@ -35,14 +40,14 @@ export function GoalsStep() {
             <option value="sport_specific">Sport-Specific (Athletic performance)</option>
             <option value="general_fitness">General Fitness (Overall health)</option>
           </Select>
-          {errors.goals?.primaryGoal && (
-            <p className="text-sm text-destructive">{errors.goals.primaryGoal.message}</p>
-          )}
-        </div>
+        </FormField>
 
         {/* Secondary Goal */}
-        <div className="space-y-2">
-          <Label htmlFor="secondaryGoal">Secondary Goal (Optional)</Label>
+        <FormField
+          label="Secondary Goal (Optional)"
+          htmlFor="secondaryGoal"
+          description="E.g., build muscle while also improving endurance"
+        >
           <Select
             id="secondaryGoal"
             {...register('goals.secondaryGoal', {
@@ -57,10 +62,7 @@ export function GoalsStep() {
             <option value="sport_specific">Sport-Specific</option>
             <option value="general_fitness">General Fitness</option>
           </Select>
-          <p className="text-xs text-muted-foreground">
-            E.g., build muscle while also improving endurance
-          </p>
-        </div>
+        </FormField>
 
         {/* Sport Details - Conditional */}
         {isSportSpecific && (
@@ -72,17 +74,22 @@ export function GoalsStep() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="sportName">What sport do you play?</Label>
+            <FormField
+              label="What sport do you play?"
+              htmlFor="sportName"
+            >
               <Input
                 id="sportName"
                 placeholder="E.g., Basketball, Soccer, MMA, Powerlifting, Cycling"
                 {...register('goals.sportDetails.sportName')}
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-2">
-              <Label htmlFor="currentPhase">Current Training Phase</Label>
+            <FormField
+              label="Current Training Phase"
+              htmlFor="currentPhase"
+              description="This affects training volume and intensity"
+            >
               <Select
                 id="currentPhase"
                 {...register('goals.sportDetails.currentPhase')}
@@ -93,16 +100,17 @@ export function GoalsStep() {
                 <option value="in-season">In-Season - Maintain strength during competition</option>
                 <option value="post-season">Post-Season - Recovery and light training</option>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                This affects training volume and intensity
-              </p>
-            </div>
+            </FormField>
           </div>
         )}
 
         {/* Timeframe */}
-        <div className="space-y-2">
-          <Label htmlFor="timeframe">How long do you want to follow this program? *</Label>
+        <FormField
+          label="How long do you want to follow this program?"
+          htmlFor="timeframe"
+          required
+          error={errors.goals?.timeframe?.message}
+        >
           <Select
             id="timeframe"
             {...register('goals.timeframe')}
@@ -113,23 +121,20 @@ export function GoalsStep() {
             <option value="6 months">6 months - Significant transformation</option>
             <option value="1 year">1 year - Long-term progression</option>
           </Select>
-          {errors.goals?.timeframe && (
-            <p className="text-sm text-destructive">{errors.goals.timeframe.message}</p>
-          )}
-        </div>
+        </FormField>
 
         {/* Specific Targets */}
-        <div className="space-y-2">
-          <Label htmlFor="specificTargets">Specific Targets or Focus Areas (Optional)</Label>
+        <FormField
+          label="Specific Targets or Focus Areas (Optional)"
+          htmlFor="specificTargets"
+          description="Any specific exercises, muscles, or metrics you want to improve"
+        >
           <Input
             id="specificTargets"
             placeholder="E.g., 'Increase bench to 100kg', 'Build bigger shoulders', 'Improve vertical jump'"
             {...register('goals.specificTargets.0')}
           />
-          <p className="text-xs text-muted-foreground">
-            Any specific exercises, muscles, or metrics you want to improve
-          </p>
-        </div>
+        </FormField>
       </CardContent>
     </Card>
   );

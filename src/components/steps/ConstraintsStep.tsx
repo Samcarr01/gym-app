@@ -1,10 +1,10 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
 import { QuestionnaireData } from '@/lib/types';
 
 export function ConstraintsStep() {
@@ -17,8 +17,11 @@ export function ConstraintsStep() {
         <CardDescription>Any additional constraints or information we should know?</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="maxExercisesPerSession">Max Exercises Per Session (Optional)</Label>
+        <FormField
+          label="Max Exercises Per Session (Optional)"
+          htmlFor="maxExercisesPerSession"
+          description="Limit the number of exercises per workout"
+        >
           <Input
             id="maxExercisesPerSession"
             type="number"
@@ -29,31 +32,30 @@ export function ConstraintsStep() {
               setValueAs: (value) => value === '' ? null : parseInt(value)
             })}
           />
-          <p className="text-xs text-muted-foreground">
-            Limit the number of exercises per workout
-          </p>
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="timeConstraints">Time Constraints (Optional)</Label>
+        <FormField
+          label="Time Constraints (Optional)"
+          htmlFor="timeConstraints"
+        >
           <Textarea
             id="timeConstraints"
             placeholder="e.g., Can only train early morning, need to finish by 7am"
             {...register('constraints.timeConstraints')}
           />
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="otherNotes">Other Notes (Optional)</Label>
+        <FormField
+          label="Other Notes (Optional)"
+          htmlFor="otherNotes"
+          description="Any other preferences, goals, or constraints"
+        >
           <Textarea
             id="otherNotes"
             placeholder="Anything else we should consider when building your plan..."
             {...register('constraints.otherNotes')}
           />
-          <p className="text-xs text-muted-foreground">
-            Any other preferences, goals, or constraints
-          </p>
-        </div>
+        </FormField>
       </CardContent>
     </Card>
   );

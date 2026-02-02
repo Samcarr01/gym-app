@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { GeneratedPlan, QuestionnaireData } from '@/lib/types';
 import { generatePlanStream, QualityReport } from '@/lib/api';
 import { PlanViewer } from '@/components/PlanViewer';
+import { PlanComparison } from '@/components/PlanComparison';
+import { PlanEditor } from '@/components/PlanEditor';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -17,6 +19,9 @@ export default function GeneratePage() {
   const [state, setState] = useState<PageState>('loading');
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
   const [qualityReport, setQualityReport] = useState<QualityReport | null>(null);
+  const [existingPlanText, setExistingPlanText] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string>('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -39,6 +44,11 @@ export default function GeneratePage() {
           questionnaire: QuestionnaireData;
           existingPlan?: string;
         };
+
+        // Store existing plan for comparison view
+        if (existingPlan) {
+          setExistingPlanText(existingPlan);
+        }
 
         const result = await generatePlanStream(
           questionnaire,
@@ -121,8 +131,53 @@ export default function GeneratePage() {
           )}
           {state === 'success' && plan && (
             <>
-              {qualityReport && <QualityBadge report={qualityReport} onRegenerate={handleRetry} />}
-              <PlanViewer plan={plan} />
+              {!isEditing && qualityReport && <QualityBadge report={qualityReport} onRegenerate={handleRetry} />}
+
+              {/* Show mode toggle buttons when not editing */}
+              {!isEditing && (
+                <div className="mb-6 flex items-center justify-center gap-4">
+                  {existingPlanText && (
+                    <>
+                      <Button
+                        variant={showComparison ? 'outline' : 'default'}
+                        onClick={() => setShowComparison(false)}
+                        size="sm"
+                      >
+                        View New Plan
+                      </Button>
+                      <Button
+                        variant={showComparison ? 'default' : 'outline'}
+                        onClick={() => setShowComparison(true)}
+                        size="sm"
+                      >
+                        Compare Changes
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    size="sm"
+                  >
+                    Edit Plan
+                  </Button>
+                </div>
+              )}
+
+              {isEditing ? (
+                <PlanEditor
+                  plan={plan}
+                  onSave={(editedPlan) => {
+                    setPlan(editedPlan);
+                    setIsEditing(false);
+                  }}
+                  onCancel={() => setIsEditing(false)}
+                />
+              ) : showComparison && existingPlanText ? (
+                <PlanComparison oldPlanText={existingPlanText} newPlan={plan} />
+              ) : (
+                <PlanViewer plan={plan} />
+              )}
             </>
           )}
           {state === 'error' && (

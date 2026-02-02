@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
+import { AlertCircle } from 'lucide-react';
 import { QuestionnaireData } from '@/lib/types';
 
 export function ExperienceStep() {
@@ -21,10 +23,10 @@ export function ExperienceStep() {
         <CardDescription>Help us understand your fitness background to create the perfect program</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Years of Training */}
+        {/* Years of Training - Custom layout for slider */}
         <div className="space-y-2">
-          <Label htmlFor="trainingYears">
-            How many years have you been training? *
+          <Label htmlFor="trainingYears" className={errors.experience?.trainingYears ? 'text-destructive' : ''}>
+            How many years have you been training? <span className="text-destructive">*</span>
           </Label>
           <div className="flex items-center gap-4">
             <Slider
@@ -42,13 +44,20 @@ export function ExperienceStep() {
             Structured training with weights, bodyweight, or sports
           </p>
           {errors.experience?.trainingYears && (
-            <p className="text-sm text-destructive">{errors.experience.trainingYears.message}</p>
+            <div className="flex items-center gap-1.5 text-sm text-destructive animate-in fade-in-0 slide-in-from-top-1 duration-200">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{errors.experience.trainingYears.message}</span>
+            </div>
           )}
         </div>
 
         {/* Current Level */}
-        <div className="space-y-2">
-          <Label htmlFor="currentLevel">Current Training Level *</Label>
+        <FormField
+          label="Current Training Level"
+          htmlFor="currentLevel"
+          required
+          error={errors.experience?.currentLevel?.message}
+        >
           <Select
             id="currentLevel"
             {...register('experience.currentLevel')}
@@ -57,14 +66,15 @@ export function ExperienceStep() {
             <option value="intermediate">Intermediate - Training consistently for 1-3 years, understand form basics</option>
             <option value="advanced">Advanced - 3+ years consistent training, advanced programming needed</option>
           </Select>
-          {errors.experience?.currentLevel && (
-            <p className="text-sm text-destructive">{errors.experience.currentLevel.message}</p>
-          )}
-        </div>
+        </FormField>
 
-        {/* Training Consistency - NEW */}
-        <div className="space-y-2">
-          <Label htmlFor="trainingConsistency">How consistent has your training been? *</Label>
+        {/* Training Consistency */}
+        <FormField
+          label="How consistent has your training been?"
+          htmlFor="trainingConsistency"
+          required
+          description="This helps us set appropriate starting volume"
+        >
           <Select
             id="trainingConsistency"
             {...register('experience.trainingConsistency')}
@@ -74,14 +84,14 @@ export function ExperienceStep() {
             <option value="inconsistent">Inconsistent - Frequent breaks or on-and-off training</option>
             <option value="returning">Returning - Long break (3+ months), rebuilding</option>
           </Select>
-          <p className="text-xs text-muted-foreground">
-            This helps us set appropriate starting volume
-          </p>
-        </div>
+        </FormField>
 
-        {/* Current Body Weight - NEW */}
-        <div className="space-y-2">
-          <Label htmlFor="currentBodyWeight">Current Body Weight (Optional)</Label>
+        {/* Current Body Weight */}
+        <FormField
+          label="Current Body Weight (Optional)"
+          htmlFor="currentBodyWeight"
+          description="Helps us give specific protein targets (e.g., '150g/day' instead of '2g/kg')"
+        >
           <div className="flex gap-2 items-center">
             <Input
               id="currentBodyWeight"
@@ -95,12 +105,9 @@ export function ExperienceStep() {
             />
             <span className="text-sm text-muted-foreground">kg</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Helps us give specific protein targets (e.g., "150g/day" instead of "2g/kg")
-          </p>
-        </div>
+        </FormField>
 
-        {/* Current Lifts - NEW */}
+        {/* Current Lifts */}
         {currentLevel !== 'beginner' && (
           <div className="space-y-3 pt-2 border-t">
             <div>
@@ -175,44 +182,44 @@ export function ExperienceStep() {
         )}
 
         {/* Recent Training History */}
-        <div className="space-y-2">
-          <Label htmlFor="recentTraining">What have you been doing recently? (Optional)</Label>
+        <FormField
+          label="What have you been doing recently? (Optional)"
+          htmlFor="recentTraining"
+          description="Describe your training over the last 2-3 months"
+        >
           <Textarea
             id="recentTraining"
             placeholder="E.g., 'Upper/lower split 4x/week', 'Running 3x/week + bodyweight work', 'CrossFit classes', etc."
             rows={3}
             {...register('experience.recentTraining')}
           />
-          <p className="text-xs text-muted-foreground">
-            Describe your training over the last 2-3 months
-          </p>
-        </div>
+        </FormField>
 
         {/* Strong Points */}
-        <div className="space-y-2">
-          <Label htmlFor="strongPoints">Strong Points (Optional)</Label>
+        <FormField
+          label="Strong Points (Optional)"
+          htmlFor="strongPoints"
+          description="Comma-separated list of what you're good at"
+        >
           <Input
             id="strongPoints"
             placeholder="E.g., 'Upper body', 'Squats', 'Endurance', 'Core strength'"
             {...register('experience.strongPoints.0')}
           />
-          <p className="text-xs text-muted-foreground">
-            Comma-separated list of what you're good at
-          </p>
-        </div>
+        </FormField>
 
         {/* Weak Points */}
-        <div className="space-y-2">
-          <Label htmlFor="weakPoints">Weak Points or Areas to Improve (Optional)</Label>
+        <FormField
+          label="Weak Points or Areas to Improve (Optional)"
+          htmlFor="weakPoints"
+          description="We'll emphasize these areas in your program"
+        >
           <Input
             id="weakPoints"
             placeholder="E.g., 'Lower body', 'Shoulders', 'Mobility', 'Posterior chain'"
             {...register('experience.weakPoints.0')}
           />
-          <p className="text-xs text-muted-foreground">
-            We'll emphasize these areas in your program
-          </p>
-        </div>
+        </FormField>
       </CardContent>
     </Card>
   );

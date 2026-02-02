@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { GeneratedPlan } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { WorkoutDay } from '@/components/WorkoutDay';
-import { Copy, Check, Printer, RotateCcw, TrendingUp, Utensils, Moon, AlertTriangle } from 'lucide-react';
+import { Copy, Check, Printer, RotateCcw, TrendingUp, Utensils, Moon, AlertTriangle, Download, Loader2 } from 'lucide-react';
 
 interface PlanViewerProps {
   plan: GeneratedPlan;
@@ -15,6 +15,8 @@ interface PlanViewerProps {
 
 export function PlanViewer({ plan }: PlanViewerProps) {
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const planRef = useRef<HTMLDivElement>(null);
   const totalExercises = plan.days.reduce((sum, day) => sum + day.exercises.length, 0);
   const avgExercises = plan.days.length ? Math.round(totalExercises / plan.days.length) : 0;
 
@@ -29,8 +31,44 @@ export function PlanViewer({ plan }: PlanViewerProps) {
     window.print();
   };
 
+  const handleExportPDF = async () => {
+    if (!planRef.current || exporting) return;
+
+    setExporting(true);
+    try {
+      // Dynamic import to avoid SSR issues
+      const html2pdf = (await import('html2pdf.js')).default;
+
+      const element = planRef.current;
+      const filename = `${plan.planName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_workout_plan.pdf`;
+
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait' as const
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error('PDF export failed:', error);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-8 print:space-y-4">
+    <div ref={planRef} className="space-y-8 print:space-y-4">
       {/* Header */}
       <header className="relative overflow-hidden glass-panel p-6 md:p-10">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5" />
@@ -65,6 +103,19 @@ export function PlanViewer({ plan }: PlanViewerProps) {
               <Button variant="outline" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" />
                 Print
+              </Button>
+              <Button variant="outline" onClick={handleExportPDF} disabled={exporting}>
+                {exporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Save PDF
+                  </>
+                )}
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/">

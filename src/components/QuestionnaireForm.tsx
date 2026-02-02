@@ -75,6 +75,20 @@ const stepComponents: Partial<Record<StepName, React.ComponentType<any>>> = {
   constraints: ConstraintsStep,
 };
 
+// Determine which steps can be skipped based on form data
+function shouldSkipStep(stepName: StepName, data: Partial<QuestionnaireData>): boolean {
+  // Skip injuries step if user selected "no injuries" quick option
+  if (stepName === 'injuries' && data.injuries?.noInjuries) {
+    return true;
+  }
+
+  // Skip detailed nutrition if user selected "intuitive" eating (they don't track)
+  // Note: We still show nutrition step but it could be simplified
+  // For now, no skip - nutrition guidance is still useful
+
+  return false;
+}
+
 export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
@@ -83,12 +97,21 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
 
-  const steps = mode === 'update' ? STEP_ORDER_UPDATE : STEP_ORDER;
+  const baseSteps = mode === 'update' ? STEP_ORDER_UPDATE : STEP_ORDER;
 
   const form = useForm<QuestionnaireData>({
     resolver: zodResolver(QuestionnaireDataSchema),
     defaultValues: DEFAULT_QUESTIONNAIRE,
     mode: 'onChange'
+  });
+
+  // Watch relevant fields for adaptive steps
+  const noInjuries = form.watch('injuries.noInjuries');
+
+  // Compute active steps (filter out skipped ones)
+  const steps = baseSteps.filter(step => {
+    const formData = form.getValues();
+    return !shouldSkipStep(step, formData);
   });
 
   // Load from localStorage on mount

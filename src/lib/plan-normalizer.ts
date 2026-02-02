@@ -538,6 +538,146 @@ function balanceMuscleGroupFrequency(
   }
 }
 
+// CFOS Volume Landmarks by experience level
+interface VolumeLandmarks {
+  MEV: number;  // Minimum Effective Volume
+  MAV: number;  // Maximum Adaptive Volume
+  MRV: number;  // Maximum Recoverable Volume
+}
+
+function getVolumeLandmarks(level: 'beginner' | 'intermediate' | 'advanced'): VolumeLandmarks {
+  switch (level) {
+    case 'beginner':
+      return { MEV: 6, MAV: 12, MRV: 15 };
+    case 'intermediate':
+      return { MEV: 8, MAV: 16, MRV: 20 };
+    case 'advanced':
+      return { MEV: 10, MAV: 20, MRV: 28 };
+    default:
+      return { MEV: 8, MAV: 14, MRV: 18 };
+  }
+}
+
+function calculateSetsPerMuscleGroup(plan: GeneratedPlan): Record<string, number> {
+  const sets: Record<string, number> = {
+    chest: 0, back: 0, shoulders: 0, legs: 0, arms: 0
+  };
+
+  for (const day of plan.days) {
+    for (const exercise of day.exercises) {
+      const groups = getMuscleGroupsForExercise(exercise.name);
+      const setsCount = exercise.sets || 3;
+
+      for (const group of groups) {
+        if (sets[group] !== undefined) {
+          sets[group] += setsCount;
+        }
+      }
+    }
+  }
+
+  return sets;
+}
+
+function enforceVolumeLandmarks(
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData,
+  restricted: string[],
+  disliked: string[]
+): void {
+  const landmarks = getVolumeLandmarks(questionnaire.experience.currentLevel);
+  const volumeSets = calculateSetsPerMuscleGroup(plan);
+  const hasGymAccess = questionnaire.equipment.gymAccess;
+
+  // Check recovery factors to determine target range
+  const poorRecovery = questionnaire.recovery.sleepHours < 6 ||
+    questionnaire.recovery.stressLevel === 'high' ||
+    questionnaire.recovery.stressLevel === 'very_high' ||
+    questionnaire.recovery.recoveryCapacity === 'low';
+
+  // If poor recovery, target MEV-MAV range; otherwise target MAV
+  const targetMin = poorRecovery ? landmarks.MEV : Math.round((landmarks.MEV + landmarks.MAV) / 2);
+  const targetMax = poorRecovery ? landmarks.MAV : landmarks.MRV;
+
+  // Exercises to add if volume is too low
+  const muscleGroupExercises: Record<string, string[]> = {
+    chest: hasGymAccess ? ['Incline Dumbbell Press', 'Cable Fly', 'Machine Chest Press'] : ['Push-Up', 'Incline Push-Up', 'Wide Push-Up'],
+    back: hasGymAccess ? ['Seated Row', 'Lat Pulldown', 'Cable Row'] : ['Inverted Row', 'Superman', 'Resistance Band Row'],
+    shoulders: hasGymAccess ? ['Lateral Raise', 'Face Pull', 'Cable Lateral Raise'] : ['Pike Push-Up', 'Band Lateral Raise', 'Y Raise'],
+    legs: hasGymAccess ? ['Leg Press', 'Leg Curl', 'Calf Raise'] : ['Bulgarian Split Squat', 'Nordic Curl', 'Single Leg Deadlift'],
+    arms: hasGymAccess ? ['Tricep Pushdown', 'Hammer Curl', 'Overhead Tricep Extension'] : ['Diamond Push-Up', 'Hammer Curl', 'Bench Dip']
+  };
+
+  // For each muscle group, ensure volume is within landmarks
+  for (const [muscle, currentSets] of Object.entries(volumeSets)) {
+    // Under MEV - need to add exercises
+    if (currentSets < targetMin && plan.days.length >= 3) {
+      const setsNeeded = targetMin - currentSets;
+      const exercisesToAdd = Math.ceil(setsNeeded / 3); // 3 sets per exercise
+
+      let added = 0;
+      for (const day of plan.days) {
+        if (added >= exercisesToAdd) break;
+
+        const existingNames = new Set(day.exercises.map(ex => ex.name.toLowerCase()));
+        const candidates = muscleGroupExercises[muscle] || [];
+
+        for (const candidate of candidates) {
+          if (
+            !existingNames.has(candidate.toLowerCase()) &&
+            !containsKeyword(candidate, restricted) &&
+            !containsKeyword(candidate, disliked)
+          ) {
+            day.exercises.push({
+              name: candidate,
+              sets: 3,
+              reps: '8-12',
+              rest: '90 seconds',
+              intent: `${muscle.charAt(0).toUpperCase() + muscle.slice(1)} volume optimization`,
+              rationale: `Added to meet CFOS minimum effective volume (${landmarks.MEV}+ sets/week) for ${muscle}`,
+              notes: 'Focus on controlled tempo and muscle connection',
+              substitutions: [],
+              progressionNote: '📈 Progress load when completing all reps with good form'
+            });
+            added++;
+            existingNames.add(candidate.toLowerCase());
+            break;
+          }
+        }
+      }
+    }
+
+    // Over MRV - need to reduce exercises (remove sets, not whole exercises)
+    if (currentSets > targetMax) {
+      const excessSets = currentSets - targetMax;
+      let removed = 0;
+
+      for (const day of [...plan.days].reverse()) {
+        if (removed >= excessSets) break;
+
+        for (let i = day.exercises.length - 1; i >= 0; i--) {
+          if (removed >= excessSets) break;
+
+          const exercise = day.exercises[i];
+          const groups = getMuscleGroupsForExercise(exercise.name);
+
+          if (groups.includes(muscle) && exercise.sets > 2) {
+            // Reduce sets instead of removing exercise
+            const reduction = Math.min(exercise.sets - 2, excessSets - removed);
+            exercise.sets -= reduction;
+            removed += reduction;
+
+            // Add note about volume management
+            if (!exercise.rationale.includes('volume')) {
+              exercise.rationale += ` (Sets reduced to stay within CFOS MRV of ${landmarks.MRV} sets/week)`;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // Primary compound movements - should always be first
 const PRIMARY_COMPOUNDS = [
   'squat', 'deadlift', 'bench press', 'overhead press', 'military press',
@@ -1583,6 +1723,7 @@ export function normalizePlan(
   diversifyExercisesAcrossDays(plan, restricted, disliked, favourites);
   fillExercisesToExactCount(plan, questionnaire, restricted, disliked);
   balanceMuscleGroupFrequency(plan, questionnaire, restricted, disliked);
+  enforceVolumeLandmarks(plan, questionnaire, restricted, disliked);
   ensureMaxExercises(plan, maxExercises, [...favourites, ...targetList]);
 
   // Preserve AI-generated nutrition notes if they include meal examples, otherwise use default

@@ -83,6 +83,7 @@ export const InjuryRecordSchema = z.object({
 
 // Injuries Section
 export const InjuriesSectionSchema = z.object({
+  noInjuries: z.boolean().default(false), // Quick skip option
   currentInjuries: z.array(InjuryRecordSchema).default([]),
   pastInjuries: z.array(InjuryRecordSchema).default([]),
   movementRestrictions: z.array(z.string()).default([]),
@@ -312,6 +313,7 @@ export const DEFAULT_QUESTIONNAIRE: QuestionnaireData = {
     limitedEquipment: []
   },
   injuries: {
+    noInjuries: false,
     currentInjuries: [],
     pastInjuries: [],
     movementRestrictions: [],
