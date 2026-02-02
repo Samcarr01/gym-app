@@ -26,9 +26,22 @@ function QuestionnaireContent() {
             </p>
           </header>
 
+          {/* Mobile info banner - shows on small screens only */}
+          <div className="lg:hidden flex flex-wrap gap-3 text-sm">
+            <div className="flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-4 py-2">
+              <span className="text-muted-foreground">Time:</span>
+              <span className="font-medium">~3 min</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-4 py-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-muted-foreground">Auto-saves progress</span>
+            </div>
+          </div>
+
           <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-start">
             <QuestionnaireForm mode={mode} />
-            <aside className="space-y-6">
+            {/* Sidebar - hidden on mobile, visible on large screens */}
+            <aside className="hidden lg:block space-y-6">
               <div className="soft-card p-6 space-y-4">
                 <h2 className="font-display text-lg font-semibold">What gets personalised</h2>
                 <ul className="space-y-2 text-sm text-muted-foreground">

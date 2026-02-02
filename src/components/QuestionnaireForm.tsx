@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from '@/components/StepIndicator';
+import { AlertCircle } from 'lucide-react';
 import {
   QuestionnaireData,
   QuestionnaireDataSchema,
@@ -49,6 +50,9 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [existingPlan, setExistingPlan] = useState<string>('');
+  const [showShake, setShowShake] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const steps = mode === 'update' ? STEP_ORDER_UPDATE : STEP_ORDER;
 
@@ -93,16 +97,42 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
     const isValid = await form.trigger(stepFields as any);
 
     if (isValid) {
+      setValidationErrors([]);
       if (isLastStep) {
         handleSubmit();
       } else {
         setCurrentStep(prev => prev + 1);
       }
+    } else {
+      // Get error messages for current step
+      const errors = stepFields
+        .map(field => {
+          const error = form.formState.errors;
+          const parts = field.split('.');
+          let current: any = error;
+          for (const part of parts) {
+            current = current?.[part];
+          }
+          return current?.message as string | undefined;
+        })
+        .filter(Boolean) as string[];
+
+      setValidationErrors(errors);
+
+      // Trigger shake animation
+      setShowShake(true);
+      setTimeout(() => setShowShake(false), 500);
+
+      // Scroll to form top to show errors
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
   const handleBack = () => {
-    if (!isFirstStep) setCurrentStep(prev => prev - 1);
+    if (!isFirstStep) {
+      setValidationErrors([]);
+      setCurrentStep(prev => prev - 1);
+    }
   };
 
   const handleSubmit = () => {
@@ -117,13 +147,31 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
 
   return (
     <FormProvider {...form}>
-      <div className="glass-panel p-6 md:p-8 space-y-6">
+      <div ref={formRef} className={`glass-panel p-6 md:p-8 space-y-6 ${showShake ? 'animate-shake' : ''}`}>
         <StepIndicator
           totalSteps={steps.length}
           currentStep={currentStep}
           completedSteps={Array.from({ length: currentStep }, (_, i) => i)}
           stepNames={steps}
         />
+
+        {/* Validation error summary */}
+        {validationErrors.length > 0 && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-medium text-destructive">Please fix the following:</p>
+                <ul className="list-disc list-inside text-destructive/80 space-y-1">
+                  {validationErrors.map((error, i) => (
+                    <li key={i}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="min-h-[400px]">
           {currentStepName === 'existingPlan' ? (
             <ExistingPlanStep value={existingPlan} onChange={setExistingPlan} />

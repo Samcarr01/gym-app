@@ -13,6 +13,145 @@ const INJURY_MOVEMENT_MAP: Record<string, string[]> = {
   'ankle': ['squat', 'calf raise', 'jump', 'running', 'lunge']
 };
 
+// Equipment requirements mapping - exercises that REQUIRE specific equipment
+const EQUIPMENT_REQUIRED: Record<string, string[]> = {
+  barbell: [
+    'barbell squat', 'back squat', 'front squat', 'barbell bench press',
+    'barbell deadlift', 'conventional deadlift', 'sumo deadlift',
+    'barbell row', 'bent over barbell row', 'barbell overhead press',
+    'barbell curl', 'skull crushers', 'barbell hip thrust'
+  ],
+  machine: [
+    'leg press', 'leg curl', 'leg extension', 'hack squat',
+    'chest press machine', 'shoulder press machine', 'pec deck',
+    'lat pulldown', 'machine lat pulldown', 'seated leg curl',
+    'lying leg curl', 'preacher curl machine', 'smith machine'
+  ],
+  cable: [
+    'cable row', 'seated cable row', 'cable crossover', 'cable fly',
+    'cable curl', 'tricep pushdown', 'face pull', 'cable lateral raise',
+    'cable crunch', 'cable pull through', 'pallof press'
+  ]
+};
+
+// Home-friendly alternatives for gym exercises
+const EQUIPMENT_ALTERNATIVES: Record<string, string> = {
+  // Barbell → Dumbbell/Bodyweight
+  'barbell squat': 'Goblet Squat',
+  'back squat': 'Goblet Squat',
+  'front squat': 'Goblet Squat',
+  'barbell bench press': 'Dumbbell Bench Press',
+  'barbell deadlift': 'Dumbbell Romanian Deadlift',
+  'conventional deadlift': 'Dumbbell Romanian Deadlift',
+  'sumo deadlift': 'Dumbbell Sumo Squat',
+  'barbell row': 'Dumbbell Row',
+  'bent over barbell row': 'Dumbbell Row',
+  'barbell overhead press': 'Dumbbell Shoulder Press',
+  'barbell curl': 'Dumbbell Curl',
+  'skull crushers': 'Overhead Tricep Extension',
+  'barbell hip thrust': 'Hip Thrust',
+
+  // Machine → Free weight/Bodyweight
+  'leg press': 'Bulgarian Split Squat',
+  'leg curl': 'Nordic Curl',
+  'leg extension': 'Sissy Squat',
+  'hack squat': 'Goblet Squat',
+  'chest press machine': 'Push-Up',
+  'shoulder press machine': 'Pike Push-Up',
+  'pec deck': 'Dumbbell Fly',
+  'lat pulldown': 'Pull-Up',
+  'machine lat pulldown': 'Pull-Up',
+  'seated leg curl': 'Nordic Curl',
+  'lying leg curl': 'Glute Bridge Curl',
+  'preacher curl machine': 'Concentration Curl',
+  'smith machine': 'Free Weight Alternative',
+
+  // Cable → Band/Dumbbell
+  'cable row': 'Dumbbell Row',
+  'seated cable row': 'Resistance Band Row',
+  'cable crossover': 'Dumbbell Fly',
+  'cable fly': 'Dumbbell Fly',
+  'cable curl': 'Dumbbell Curl',
+  'tricep pushdown': 'Diamond Push-Up',
+  'face pull': 'Band Face Pull',
+  'cable lateral raise': 'Dumbbell Lateral Raise',
+  'cable crunch': 'Crunch',
+  'cable pull through': 'Hip Hinge',
+  'pallof press': 'Dead Bug'
+};
+
+function getEquipmentRestrictedExercises(equipment: QuestionnaireData['equipment']): string[] {
+  const restricted: string[] = [];
+
+  if (!equipment.gymAccess) {
+    // No gym = no barbell, machine, or cable exercises
+    restricted.push(...EQUIPMENT_REQUIRED.barbell);
+    restricted.push(...EQUIPMENT_REQUIRED.machine);
+    restricted.push(...EQUIPMENT_REQUIRED.cable);
+  } else {
+    // Check specific equipment limitations
+    const limitedLower = equipment.limitedEquipment.map(e => e.toLowerCase()).join(' ');
+
+    if (limitedLower.includes('barbell') || limitedLower.includes('no barbell')) {
+      restricted.push(...EQUIPMENT_REQUIRED.barbell);
+    }
+    if (limitedLower.includes('machine') || limitedLower.includes('no machine')) {
+      restricted.push(...EQUIPMENT_REQUIRED.machine);
+    }
+    if (limitedLower.includes('cable') || limitedLower.includes('no cable')) {
+      restricted.push(...EQUIPMENT_REQUIRED.cable);
+    }
+  }
+
+  return restricted.map(e => e.toLowerCase());
+}
+
+function replaceEquipmentRestrictedExercises(
+  plan: GeneratedPlan,
+  equipment: QuestionnaireData['equipment']
+): void {
+  const restricted = getEquipmentRestrictedExercises(equipment);
+  if (restricted.length === 0) return;
+
+  for (const day of plan.days) {
+    for (const exercise of day.exercises) {
+      const nameLower = exercise.name.toLowerCase();
+
+      // Check if exercise matches any restricted pattern
+      const matchedRestriction = restricted.find(r => nameLower.includes(r) || r.includes(nameLower));
+
+      if (matchedRestriction) {
+        // Find alternative
+        const alternative = EQUIPMENT_ALTERNATIVES[matchedRestriction] ||
+                           EQUIPMENT_ALTERNATIVES[nameLower] ||
+                           findGenericAlternative(nameLower);
+
+        if (alternative) {
+          exercise.name = alternative;
+          exercise.notes = `${exercise.notes || ''} (Substituted for home workout)`.trim();
+        }
+      }
+    }
+  }
+}
+
+function findGenericAlternative(exerciseName: string): string | null {
+  const lower = exerciseName.toLowerCase();
+
+  // Generic fallbacks based on movement pattern
+  if (lower.includes('squat')) return 'Goblet Squat';
+  if (lower.includes('press') && lower.includes('bench')) return 'Push-Up';
+  if (lower.includes('press') && lower.includes('shoulder')) return 'Pike Push-Up';
+  if (lower.includes('row')) return 'Dumbbell Row';
+  if (lower.includes('curl') && lower.includes('leg')) return 'Nordic Curl';
+  if (lower.includes('extension') && lower.includes('leg')) return 'Sissy Squat';
+  if (lower.includes('pulldown') || lower.includes('pull down')) return 'Pull-Up';
+  if (lower.includes('fly') || lower.includes('flye')) return 'Dumbbell Fly';
+  if (lower.includes('pushdown') || lower.includes('push down')) return 'Diamond Push-Up';
+
+  return null;
+}
+
 function normalizeList(items: string[]): string[] {
   const output: string[] = [];
   for (const item of items) {
@@ -104,7 +243,8 @@ function ensureMaxExercises(
   }
 }
 
-const ACCESSORY_POOL: Record<string, string[]> = {
+// Gym accessory pool - includes machines and cables
+const ACCESSORY_POOL_GYM: Record<string, string[]> = {
   upper: ['Cable Row', 'Incline Dumbbell Press', 'Face Pull', 'Lateral Raise', 'Tricep Pushdown', 'Hammer Curl'],
   lower: ['Leg Curl', 'Leg Extension', 'Hip Thrust', 'Split Squat', 'Calf Raise', 'Glute Bridge'],
   push: ['Chest Press', 'Incline Press', 'Overhead Press', 'Lateral Raise', 'Tricep Extension', 'Push-Up'],
@@ -112,6 +252,20 @@ const ACCESSORY_POOL: Record<string, string[]> = {
   full: ['Goblet Squat', 'Dumbbell Bench Press', 'Lat Pulldown', 'Romanian Deadlift', 'Plank', 'Farmer Carry'],
   core: ['Plank', 'Dead Bug', 'Pallof Press', 'Side Plank', 'Bird Dog', 'Hollow Hold']
 };
+
+// Home accessory pool - no machines or cables, only bodyweight and dumbbells
+const ACCESSORY_POOL_HOME: Record<string, string[]> = {
+  upper: ['Dumbbell Row', 'Incline Push-Up', 'Band Face Pull', 'Lateral Raise', 'Diamond Push-Up', 'Hammer Curl'],
+  lower: ['Nordic Curl', 'Sissy Squat', 'Hip Thrust', 'Split Squat', 'Calf Raise', 'Glute Bridge'],
+  push: ['Push-Up', 'Incline Push-Up', 'Pike Push-Up', 'Lateral Raise', 'Overhead Tricep Extension', 'Decline Push-Up'],
+  pull: ['Inverted Row', 'Pull-Up', 'Rear Delt Fly', 'Band Face Pull', 'Hammer Curl', 'Superman'],
+  full: ['Goblet Squat', 'Push-Up', 'Pull-Up', 'Romanian Deadlift', 'Plank', 'Farmer Carry'],
+  core: ['Plank', 'Dead Bug', 'Hollow Hold', 'Side Plank', 'Bird Dog', 'Mountain Climber']
+};
+
+function getAccessoryPoolByEquipment(hasGymAccess: boolean): Record<string, string[]> {
+  return hasGymAccess ? ACCESSORY_POOL_GYM : ACCESSORY_POOL_HOME;
+}
 
 const MAIN_LIFT_KEYWORDS = [
   'squat',
@@ -442,14 +596,15 @@ function getSetsForExercise(
   return sets;
 }
 
-function getAccessoryPool(focus: string): string[] {
+function getAccessoryPoolForFocus(focus: string, hasGymAccess: boolean): string[] {
+  const pool = getAccessoryPoolByEquipment(hasGymAccess);
   const lower = focus.toLowerCase();
-  if (lower.includes('upper')) return ACCESSORY_POOL.upper;
-  if (lower.includes('lower') || lower.includes('leg')) return ACCESSORY_POOL.lower;
-  if (lower.includes('push')) return ACCESSORY_POOL.push;
-  if (lower.includes('pull') || lower.includes('back')) return ACCESSORY_POOL.pull;
-  if (lower.includes('full')) return ACCESSORY_POOL.full;
-  return ACCESSORY_POOL.full;
+  if (lower.includes('upper')) return pool.upper;
+  if (lower.includes('lower') || lower.includes('leg')) return pool.lower;
+  if (lower.includes('push')) return pool.push;
+  if (lower.includes('pull') || lower.includes('back')) return pool.pull;
+  if (lower.includes('full')) return pool.full;
+  return pool.full;
 }
 
 function fillExercisesToExactCount(
@@ -461,12 +616,13 @@ function fillExercisesToExactCount(
   const maxExercises = questionnaire.constraints.maxExercisesPerSession;
   if (!maxExercises || maxExercises <= 0) return;
 
+  const hasGymAccess = questionnaire.equipment.gymAccess;
   const globalUsed = new Set(plan.days.flatMap((day) => day.exercises.map((ex) => ex.name.toLowerCase())));
 
   for (const day of plan.days) {
     if (day.exercises.length >= maxExercises) continue;
 
-    const pool = getAccessoryPool(day.focus);
+    const pool = getAccessoryPoolForFocus(day.focus, hasGymAccess);
     const existingNames = new Set(day.exercises.map((ex) => ex.name.toLowerCase()));
     const candidates = pool.filter(
       (name) =>
@@ -1310,6 +1466,7 @@ export function normalizePlan(
   }
 
   removeDislikedExercises(plan, disliked);
+  replaceEquipmentRestrictedExercises(plan, questionnaire.equipment);
   ensureMandatoryExercises(plan, questionnaire, restricted, disliked, maxExercises);
   ensureTargetExercises(plan, targetList, restricted, disliked, maxExercises);
   includeFavouriteExercises(plan, favourites, restricted, maxExercises);
