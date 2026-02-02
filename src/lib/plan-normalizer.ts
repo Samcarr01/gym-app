@@ -431,6 +431,113 @@ function applyEquipmentSwap(name: string, questionnaire: QuestionnaireData): str
   return name;
 }
 
+// Muscle group to exercise keyword mapping for frequency validation
+const MUSCLE_GROUP_KEYWORDS: Record<string, string[]> = {
+  chest: ['bench', 'press', 'push-up', 'push up', 'pushup', 'fly', 'flye', 'dip', 'chest'],
+  back: ['row', 'pull-up', 'pull up', 'pullup', 'chin-up', 'chin up', 'lat', 'pulldown', 'deadlift', 'back'],
+  shoulders: ['overhead', 'shoulder', 'delt', 'military', 'lateral raise', 'front raise', 'face pull'],
+  legs: ['squat', 'leg', 'lunge', 'step-up', 'step up', 'quad', 'hamstring', 'glute', 'calf', 'hip thrust'],
+  arms: ['curl', 'tricep', 'bicep', 'extension', 'pushdown', 'skull', 'hammer']
+};
+
+function getMuscleGroupsForExercise(exerciseName: string): string[] {
+  const lower = exerciseName.toLowerCase();
+  const groups: string[] = [];
+
+  for (const [group, keywords] of Object.entries(MUSCLE_GROUP_KEYWORDS)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      groups.push(group);
+    }
+  }
+
+  return groups.length > 0 ? groups : ['other'];
+}
+
+function calculateMuscleGroupFrequency(plan: GeneratedPlan): Record<string, number> {
+  const frequency: Record<string, number> = {
+    chest: 0, back: 0, shoulders: 0, legs: 0, arms: 0
+  };
+
+  for (const day of plan.days) {
+    const dayMuscles = new Set<string>();
+
+    for (const exercise of day.exercises) {
+      const groups = getMuscleGroupsForExercise(exercise.name);
+      groups.forEach(g => dayMuscles.add(g));
+    }
+
+    // Count each muscle group once per day
+    dayMuscles.forEach(muscle => {
+      if (frequency[muscle] !== undefined) {
+        frequency[muscle]++;
+      }
+    });
+  }
+
+  return frequency;
+}
+
+function balanceMuscleGroupFrequency(
+  plan: GeneratedPlan,
+  questionnaire: QuestionnaireData,
+  restricted: string[],
+  disliked: string[]
+): void {
+  const frequency = calculateMuscleGroupFrequency(plan);
+  const hasGymAccess = questionnaire.equipment.gymAccess;
+  const pool = getAccessoryPoolByEquipment(hasGymAccess);
+
+  // Exercises to add for underworked muscle groups
+  const muscleGroupExercises: Record<string, string[]> = {
+    chest: hasGymAccess ? ['Incline Dumbbell Press', 'Cable Fly', 'Dumbbell Bench Press'] : ['Push-Up', 'Incline Push-Up', 'Diamond Push-Up'],
+    back: hasGymAccess ? ['Seated Row', 'Lat Pulldown', 'Dumbbell Row'] : ['Inverted Row', 'Pull-Up', 'Superman'],
+    shoulders: hasGymAccess ? ['Lateral Raise', 'Face Pull', 'Overhead Press'] : ['Pike Push-Up', 'Lateral Raise', 'Band Face Pull'],
+    legs: hasGymAccess ? ['Leg Press', 'Romanian Deadlift', 'Leg Curl'] : ['Bulgarian Split Squat', 'Hip Thrust', 'Nordic Curl'],
+    arms: hasGymAccess ? ['Tricep Pushdown', 'Hammer Curl', 'Cable Curl'] : ['Diamond Push-Up', 'Hammer Curl', 'Overhead Tricep Extension']
+  };
+
+  for (const [muscle, freq] of Object.entries(frequency)) {
+    // If a muscle group is hit only 1x/week, try to add another session
+    if (freq < 2 && plan.days.length >= 3) {
+      // Find a day that doesn't already have this muscle group
+      for (const day of plan.days) {
+        const dayMuscles = new Set<string>();
+        day.exercises.forEach(ex => {
+          getMuscleGroupsForExercise(ex.name).forEach(g => dayMuscles.add(g));
+        });
+
+        if (!dayMuscles.has(muscle)) {
+          // Add an exercise for this muscle group
+          const candidates = muscleGroupExercises[muscle] || [];
+          const existingNames = new Set(day.exercises.map(ex => ex.name.toLowerCase()));
+
+          for (const candidate of candidates) {
+            if (
+              !existingNames.has(candidate.toLowerCase()) &&
+              !containsKeyword(candidate, restricted) &&
+              !containsKeyword(candidate, disliked)
+            ) {
+              day.exercises.push({
+                name: candidate,
+                sets: 3,
+                reps: '8-12',
+                rest: '90 seconds',
+                intent: `${muscle.charAt(0).toUpperCase() + muscle.slice(1)} frequency balance`,
+                rationale: `Added to ensure ${muscle} is trained at least 2x per week for optimal growth`,
+                notes: 'Control the movement, focus on mind-muscle connection',
+                substitutions: [],
+                progressionNote: '📈 Progress when you can complete all reps with good form'
+              });
+              break;
+            }
+          }
+          break; // Only add to one day
+        }
+      }
+    }
+  }
+}
+
 // Primary compound movements - should always be first
 const PRIMARY_COMPOUNDS = [
   'squat', 'deadlift', 'bench press', 'overhead press', 'military press',
@@ -1475,6 +1582,7 @@ export function normalizePlan(
   ensureCardioFinishers(plan, questionnaire, restricted, disliked, maxExercises);
   diversifyExercisesAcrossDays(plan, restricted, disliked, favourites);
   fillExercisesToExactCount(plan, questionnaire, restricted, disliked);
+  balanceMuscleGroupFrequency(plan, questionnaire, restricted, disliked);
   ensureMaxExercises(plan, maxExercises, [...favourites, ...targetList]);
 
   // Preserve AI-generated nutrition notes if they include meal examples, otherwise use default

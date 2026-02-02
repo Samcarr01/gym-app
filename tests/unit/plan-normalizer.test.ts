@@ -44,7 +44,8 @@ function createPlan(days: Array<{ name: string; focus: string; exercises: Array<
     })),
     progressionGuidance: 'Test progression',
     nutritionNotes: 'Test nutrition with breakfast and lunch examples',
-    recoveryNotes: 'Test recovery'
+    recoveryNotes: 'Test recovery',
+    disclaimer: 'Consult a healthcare professional before starting any exercise program.'
   };
 }
 
