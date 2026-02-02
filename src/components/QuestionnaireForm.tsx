@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from '@/components/StepIndicator';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import {
   QuestionnaireData,
   QuestionnaireDataSchema,
@@ -16,17 +17,44 @@ import {
   StepName
 } from '@/lib/types';
 
-// Step components
-import { GoalsStep } from '@/components/steps/GoalsStep';
-import { ExperienceStep } from '@/components/steps/ExperienceStep';
-import { AvailabilityStep } from '@/components/steps/AvailabilityStep';
-import { EquipmentStep } from '@/components/steps/EquipmentStep';
-import { InjuriesStep } from '@/components/steps/InjuriesStep';
-import { RecoveryStep } from '@/components/steps/RecoveryStep';
-import { NutritionStep } from '@/components/steps/NutritionStep';
-import { PreferencesStep } from '@/components/steps/PreferencesStep';
-import { ConstraintsStep } from '@/components/steps/ConstraintsStep';
-import { ExistingPlanStep } from '@/components/steps/ExistingPlanStep';
+// Loading component for lazy-loaded steps
+const StepLoader = () => (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
+  </div>
+);
+
+// Lazy load step components for better initial bundle size
+const GoalsStep = dynamic(() => import('@/components/steps/GoalsStep').then(m => ({ default: m.GoalsStep })), {
+  loading: StepLoader,
+});
+const ExperienceStep = dynamic(() => import('@/components/steps/ExperienceStep').then(m => ({ default: m.ExperienceStep })), {
+  loading: StepLoader,
+});
+const AvailabilityStep = dynamic(() => import('@/components/steps/AvailabilityStep').then(m => ({ default: m.AvailabilityStep })), {
+  loading: StepLoader,
+});
+const EquipmentStep = dynamic(() => import('@/components/steps/EquipmentStep').then(m => ({ default: m.EquipmentStep })), {
+  loading: StepLoader,
+});
+const InjuriesStep = dynamic(() => import('@/components/steps/InjuriesStep').then(m => ({ default: m.InjuriesStep })), {
+  loading: StepLoader,
+});
+const RecoveryStep = dynamic(() => import('@/components/steps/RecoveryStep').then(m => ({ default: m.RecoveryStep })), {
+  loading: StepLoader,
+});
+const NutritionStep = dynamic(() => import('@/components/steps/NutritionStep').then(m => ({ default: m.NutritionStep })), {
+  loading: StepLoader,
+});
+const PreferencesStep = dynamic(() => import('@/components/steps/PreferencesStep').then(m => ({ default: m.PreferencesStep })), {
+  loading: StepLoader,
+});
+const ConstraintsStep = dynamic(() => import('@/components/steps/ConstraintsStep').then(m => ({ default: m.ConstraintsStep })), {
+  loading: StepLoader,
+});
+const ExistingPlanStep = dynamic(() => import('@/components/steps/ExistingPlanStep').then(m => ({ default: m.ExistingPlanStep })), {
+  loading: StepLoader,
+});
 
 interface QuestionnaireFormProps {
   mode: 'new' | 'update';
@@ -34,7 +62,8 @@ interface QuestionnaireFormProps {
 
 const STORAGE_KEY = 'gym-plan-questionnaire';
 
-const stepComponents: Partial<Record<StepName, React.ComponentType<{ form: any }>>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const stepComponents: Partial<Record<StepName, React.ComponentType<any>>> = {
   goals: GoalsStep,
   experience: ExperienceStep,
   availability: AvailabilityStep,
