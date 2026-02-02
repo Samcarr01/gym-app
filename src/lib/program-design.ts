@@ -52,10 +52,57 @@ function progressionByLevel(level: QuestionnaireData['experience']['currentLevel
   return 'Block progression: 4-6 week blocks (accumulation → intensification → deload).';
 }
 
-function deloadGuidance(level: QuestionnaireData['experience']['currentLevel']): string {
-  if (level === 'beginner') return 'Deload optional every 6-8 weeks if fatigue accumulates.';
-  if (level === 'intermediate') return 'Deload every 4th week (reduce volume by ~30-40%).';
-  return 'Deload every 4-6 weeks (reduce volume by ~40-50%).';
+function deloadGuidance(
+  level: QuestionnaireData['experience']['currentLevel'],
+  recovery: QuestionnaireData['recovery'],
+  trainingYears: number
+): string {
+  // Calculate deload frequency based on multiple factors
+  let deloadFrequency: number;
+  let volumeReduction: string;
+  let deloadStrategy: string;
+
+  // Base frequency by level
+  if (level === 'beginner') {
+    deloadFrequency = 8;
+    volumeReduction = '20-30%';
+    deloadStrategy = 'reduce sets by half, keep weight the same';
+  } else if (level === 'intermediate') {
+    deloadFrequency = 4;
+    volumeReduction = '30-40%';
+    deloadStrategy = 'reduce sets by 40% and weight by 10-20%';
+  } else {
+    deloadFrequency = 4;
+    volumeReduction = '40-50%';
+    deloadStrategy = 'reduce both volume and intensity significantly';
+  }
+
+  // Adjust for recovery factors
+  if (recovery.stressLevel === 'high' || recovery.stressLevel === 'very_high') {
+    deloadFrequency = Math.max(3, deloadFrequency - 1);
+  }
+  if (recovery.recoveryCapacity === 'low') {
+    deloadFrequency = Math.max(3, deloadFrequency - 1);
+  }
+  if (recovery.sleepQuality === 'poor' || recovery.sleepHours < 6) {
+    deloadFrequency = Math.max(3, deloadFrequency - 1);
+  }
+
+  // Adjust for training age
+  if (trainingYears > 5) {
+    deloadFrequency = Math.max(3, deloadFrequency - 1);
+  }
+
+  // Build the guidance string
+  const frequencyText = level === 'beginner'
+    ? `Deload every ${deloadFrequency}-${deloadFrequency + 2} weeks if fatigue accumulates`
+    : `Deload every ${deloadFrequency} weeks (week ${deloadFrequency} of each cycle)`;
+
+  const deloadWeekDetails = `During deload: ${deloadStrategy}. Reduce volume by ~${volumeReduction}. Maintain movement patterns but prioritize recovery. Good time for mobility work, light cardio, and extra sleep.`;
+
+  const warningSignals = 'Signs you need an early deload: persistent fatigue, strength regression, poor sleep, elevated resting heart rate, or decreased motivation.';
+
+  return `${frequencyText}. ${deloadWeekDetails} ${warningSignals}`;
 }
 
 function cardioGuidance(pref: QuestionnaireData['preferences']['cardioPreference']): string {
@@ -101,7 +148,11 @@ export function buildProgramDesign(questionnaire: QuestionnaireData): ProgramDes
     restAccessory: repRest.restAccessory,
     weeklySetTarget: weeklySetsByLevel(questionnaire.experience.currentLevel),
     progressionModel: progressionByLevel(questionnaire.experience.currentLevel),
-    deloadGuidance: deloadGuidance(questionnaire.experience.currentLevel),
+    deloadGuidance: deloadGuidance(
+      questionnaire.experience.currentLevel,
+      questionnaire.recovery,
+      questionnaire.experience.trainingYears
+    ),
     cardioGuidance: cardioGuidance(questionnaire.preferences.cardioPreference),
     recoveryModifier: recoveryModifier(questionnaire.recovery)
   };

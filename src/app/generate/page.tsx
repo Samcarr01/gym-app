@@ -139,6 +139,21 @@ export default function GeneratePage() {
   );
 }
 
+const FITNESS_TIPS = [
+  { tip: "Progressive overload is the key to growth", detail: "Gradually increase weight, reps, or sets over time" },
+  { tip: "Sleep is when muscles actually grow", detail: "Aim for 7-9 hours of quality sleep per night" },
+  { tip: "Compound movements build the most strength", detail: "Squats, deadlifts, bench press, and rows should be staples" },
+  { tip: "Protein timing matters less than total intake", detail: "Focus on hitting your daily protein goal first" },
+  { tip: "Deload weeks prevent burnout and injury", detail: "Every 4-6 weeks, reduce volume by 30-50%" },
+  { tip: "Mind-muscle connection improves results", detail: "Focus on the muscle working, not just moving weight" },
+  { tip: "Consistency beats perfection every time", detail: "A good plan you follow beats a perfect plan you don't" },
+  { tip: "Warm-up sets prevent injuries", detail: "Start with lighter weights before your working sets" },
+  { tip: "Track your workouts to ensure progress", detail: "What gets measured gets managed" },
+  { tip: "Recovery is part of the training process", detail: "Your muscles grow during rest, not during the workout" },
+  { tip: "Hydration affects performance significantly", detail: "Even 2% dehydration can reduce strength by 10%" },
+  { tip: "Form always comes before weight", detail: "Master the movement pattern before adding load" },
+];
+
 function LoadingState({
   elapsedSeconds,
   progress,
@@ -150,6 +165,17 @@ function LoadingState({
   statusMessage: string;
   statusStage: string;
 }) {
+  const [tipIndex, setTipIndex] = useState(0);
+
+  // Rotate tips every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % FITNESS_TIPS.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentTip = FITNESS_TIPS[tipIndex];
   const clampedProgress = Math.min(100, Math.max(5, progress || 5));
   const stages = [
     { id: 'validate', label: 'Validating inputs' },
@@ -224,6 +250,33 @@ function LoadingState({
               <p>Applying your goals, targets, and recovery inputs to choose the split and volume.</p>
               <p>Injecting the knowledge base and refining the plan for your constraints.</p>
               <p className="text-primary/80">This stays live until the plan is ready.</p>
+            </div>
+          </div>
+
+          {/* Rotating fitness tips */}
+          <div className="border-t border-border/50 pt-6 mt-2">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-primary text-sm">💡</span>
+              </div>
+              <div className="space-y-1 min-h-[3.5rem]">
+                <p className="text-sm font-medium text-foreground transition-opacity duration-300">
+                  {currentTip.tip}
+                </p>
+                <p className="text-xs text-muted-foreground transition-opacity duration-300">
+                  {currentTip.detail}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-1 mt-3 justify-center">
+              {FITNESS_TIPS.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1 w-1 rounded-full transition-colors ${
+                    i === tipIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+                  }`}
+                />
+              ))}
             </div>
           </div>
         </div>

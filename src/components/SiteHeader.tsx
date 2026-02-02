@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function SiteHeader() {
   return (
@@ -33,6 +34,7 @@ export function SiteHeader() {
           <span className="hidden rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-primary md:inline-flex">
             Free beta
           </span>
+          <ThemeToggle />
           <Button asChild size="sm">
             <Link href="/start">Start now</Link>
           </Button>
