@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { StepIndicator } from '@/components/StepIndicator';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import {
   QuestionnaireData,
   QuestionnaireDataSchema,
@@ -19,8 +19,10 @@ import {
 
 // Loading component for lazy-loaded steps
 const StepLoader = () => (
-  <div className="flex items-center justify-center py-12">
-    <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
+  <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+    <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Calibrating sensors</p>
+    <p className="text-xs text-muted-foreground">Aligning the plan engine to your inputs.</p>
   </div>
 );
 
@@ -75,6 +77,31 @@ const stepComponents: Partial<Record<StepName, React.ComponentType<any>>> = {
   constraints: ConstraintsStep,
 };
 
+const stepLabels: Record<StepName, string> = {
+  goals: 'Goals',
+  experience: 'Experience',
+  availability: 'Schedule',
+  equipment: 'Equipment',
+  injuries: 'Injuries',
+  recovery: 'Recovery',
+  nutrition: 'Nutrition',
+  preferences: 'Preferences',
+  constraints: 'Constraints',
+  existingPlan: 'Existing plan',
+};
+
+const coachNotes: Partial<Record<StepName, string>> = {
+  goals: 'Pick the primary outcome. It anchors your split, volume, and progression.',
+  experience: 'Be honest here. The plan adapts intensity and exercise complexity.',
+  availability: 'Realistic scheduling beats perfect scheduling. Pick what you can repeat.',
+  equipment: 'Tell us what you actually have access to. We will work within it.',
+  injuries: 'Mention anything that hurts or limits you. Safety first.',
+  recovery: 'Sleep and stress shape volume more than most people think.',
+  nutrition: 'Simple guidance beats perfect tracking. Tell us your approach.',
+  preferences: 'Favourites and dislikes help keep you consistent.',
+  constraints: 'Anything else that makes this plan easier to follow.',
+};
+
 // Determine which steps can be skipped based on form data
 function shouldSkipStep(stepName: StepName, data: Partial<QuestionnaireData>): boolean {
   // Skip injuries step if user selected "no injuries" quick option
@@ -107,6 +134,20 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
 
   // Watch relevant fields for adaptive steps
   const noInjuries = form.watch('injuries.noInjuries');
+  const primaryGoal = form.watch('goals.primaryGoal');
+  const daysPerWeek = form.watch('availability.daysPerWeek');
+  const gymAccess = form.watch('equipment.gymAccess');
+  const sleepHours = form.watch('recovery.sleepHours');
+  const cardioPreference = form.watch('preferences.cardioPreference');
+
+  const formatDisplay = (value: unknown) => {
+    if (value === undefined || value === null || value === '') return 'Not set';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'number') return value.toString();
+    return String(value)
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
 
   // Compute active steps (filter out skipped ones)
   const steps = baseSteps.filter(step => {
@@ -143,6 +184,8 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
   const StepComponent = stepComponents[currentStepName];
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
+  const nextStepName = steps[currentStep + 1];
+  const nextStepLabel = nextStepName ? stepLabels[nextStepName] : 'Next';
 
   const handleNext = async () => {
     const stepFields = getStepFields(currentStepName);
@@ -205,7 +248,41 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
           currentStep={currentStep}
           completedSteps={Array.from({ length: currentStep }, (_, i) => i)}
           stepNames={steps}
+          stepLabels={stepLabels}
         />
+
+        {currentStepName && coachNotes[currentStepName] && (
+          <div className="soft-card p-4 text-sm text-muted-foreground">
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Coach note</p>
+            <p className="mt-2">{coachNotes[currentStepName]}</p>
+          </div>
+        )}
+
+        <div className="soft-card p-4 space-y-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Signal preview</p>
+          <div className="grid gap-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Primary goal</span>
+              <span className="font-semibold text-foreground">{formatDisplay(primaryGoal)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Days per week</span>
+              <span className="font-semibold text-foreground">{daysPerWeek ? `${daysPerWeek} days` : 'Not set'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Gym access</span>
+              <span className="font-semibold text-foreground">{gymAccess === undefined ? 'Not set' : gymAccess ? 'Yes' : 'No'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Sleep</span>
+              <span className="font-semibold text-foreground">{sleepHours ? `${sleepHours} hrs` : 'Not set'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Cardio</span>
+              <span className="font-semibold text-foreground">{formatDisplay(cardioPreference)}</span>
+            </div>
+          </div>
+        </div>
 
         {/* Validation error summary */}
         {validationErrors.length > 0 && (
@@ -224,7 +301,7 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
           </div>
         )}
 
-        <div className="min-h-[400px]">
+        <div key={currentStepName} className="min-h-[400px] animate-rise">
           {currentStepName === 'existingPlan' ? (
             <ExistingPlanStep value={existingPlan} onChange={setExistingPlan} />
           ) : StepComponent ? (
@@ -236,7 +313,7 @@ export function QuestionnaireForm({ mode }: QuestionnaireFormProps) {
             Back
           </Button>
           <Button type="button" onClick={handleNext}>
-            {isLastStep ? 'Generate Plan' : 'Next'}
+            {isLastStep ? 'Generate Plan' : `Next: ${nextStepLabel}`}
           </Button>
         </div>
       </div>

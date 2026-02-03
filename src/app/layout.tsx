@@ -26,7 +26,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0a0a0a',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0b0f13' },
+    { media: '(prefers-color-scheme: light)', color: '#f7f4ef' }
+  ],
 };
 
 export default function RootLayout({
@@ -39,7 +42,7 @@ export default function RootLayout({
       <body className={`${display.variable} ${body.variable} font-body antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

@@ -14,14 +14,14 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
         <input
           type="range"
           className={cn(
-            'w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary',
+            'w-full h-2 rounded-full appearance-none cursor-pointer bg-gradient-to-r from-primary/30 via-primary/10 to-muted/60 accent-primary',
             className
           )}
           ref={ref}
           {...props}
         />
         {showValue && (
-          <span className="text-sm font-medium w-12 text-right">
+          <span className="text-sm font-medium w-12 text-right text-foreground/80">
             {props.value}
           </span>
         )}

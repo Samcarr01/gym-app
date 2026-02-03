@@ -5,14 +5,13 @@ import { GeneratedPlan } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeftRight, ChevronDown, ChevronUp, Plus, Minus, Equal } from 'lucide-react';
+import { ArrowLeftRight, ChevronDown, ChevronUp, Plus, Equal } from 'lucide-react';
 
 interface PlanComparisonProps {
   oldPlanText: string;
   newPlan: GeneratedPlan;
 }
 
-// Parse basic structure from plan text
 function parseOldPlan(text: string): { days: Array<{ name: string; exercises: string[] }> } {
   const days: Array<{ name: string; exercises: string[] }> = [];
   const lines = text.split('\n');
@@ -22,7 +21,6 @@ function parseOldPlan(text: string): { days: Array<{ name: string; exercises: st
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Look for day markers
     const dayMatch = trimmed.match(/^(?:DAY\s*\d+:?\s*|Day\s*\d+:?\s*)(.+)/i);
     if (dayMatch) {
       if (currentDay) days.push(currentDay);
@@ -30,11 +28,10 @@ function parseOldPlan(text: string): { days: Array<{ name: string; exercises: st
       continue;
     }
 
-    // Look for exercise names (lines that start with - or • or numbers)
     if (currentDay && trimmed.match(/^[-•\d.]\s*.+/)) {
       const exerciseName = trimmed
         .replace(/^[-•\d.]+\s*/, '')
-        .replace(/:\s*\d+x\d+.*$/, '') // Remove sets x reps
+        .replace(/:\s*\d+x\d+.*$/, '')
         .replace(/\s*-\s*\d+\s*(sets?|reps?).*$/i, '')
         .trim();
 
@@ -64,38 +61,38 @@ export function PlanComparison({ oldPlanText, newPlan }: PlanComparisonProps) {
     });
   };
 
-  // Create a set of old exercises for comparison
   const oldExercises = new Set(
     oldPlan.days.flatMap(d => d.exercises.map(e => e.toLowerCase()))
   );
 
-  const getExerciseStatus = (exerciseName: string): 'new' | 'same' | 'removed' => {
+  const getExerciseStatus = (exerciseName: string): 'new' | 'same' => {
     const lower = exerciseName.toLowerCase();
-    // Check if any old exercise contains or is contained in the new exercise name
     const isInOld = Array.from(oldExercises).some(
       old => old.includes(lower) || lower.includes(old)
     );
     return isInOld ? 'same' : 'new';
   };
 
-  // Count changes
   const newExerciseCount = newPlan.days.reduce((count, day) => {
     return count + day.exercises.filter(ex => getExerciseStatus(ex.name) === 'new').length;
   }, 0);
 
   return (
-    <Card className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ArrowLeftRight className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-lg">Plan Comparison</h3>
+    <Card className="p-6 space-y-6 animate-rise">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Delta view</p>
+          <div className="flex items-center gap-3">
+            <ArrowLeftRight className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold text-lg">Plan Comparison</h3>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Badge variant="outline" className="gap-1">
+          <Badge variant="outline" className="gap-1 tracking-normal normal-case">
             <Plus className="h-3 w-3" />
             {newExerciseCount} new exercises
           </Badge>
-          <Badge variant="secondary">{newPlan.days.length} days</Badge>
+          <Badge variant="secondary" className="tracking-normal normal-case">{newPlan.days.length} days</Badge>
         </div>
       </div>
 
@@ -109,7 +106,7 @@ export function PlanComparison({ oldPlanText, newPlan }: PlanComparisonProps) {
           const oldDay = oldPlan.days[dayIndex];
 
           return (
-            <div key={dayIndex} className="border rounded-lg overflow-hidden">
+            <div key={dayIndex} className="border border-border/70 rounded-xl overflow-hidden bg-background/60">
               <button
                 onClick={() => toggleDay(dayIndex)}
                 className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
@@ -131,10 +128,9 @@ export function PlanComparison({ oldPlanText, newPlan }: PlanComparisonProps) {
               </button>
 
               {isExpanded && (
-                <div className="px-4 pb-4 grid md:grid-cols-2 gap-4">
-                  {/* Old Plan Column */}
+                <div className="px-4 pb-4 grid md:grid-cols-2 gap-4 border-t border-border/60">
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Previous Plan</p>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-[0.3em]">Previous plan</p>
                     {oldDay ? (
                       <ul className="space-y-1.5">
                         {oldDay.exercises.map((ex, i) => (
@@ -149,9 +145,8 @@ export function PlanComparison({ oldPlanText, newPlan }: PlanComparisonProps) {
                     )}
                   </div>
 
-                  {/* New Plan Column */}
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-primary uppercase tracking-wide">Updated Plan</p>
+                    <p className="text-xs font-medium text-primary uppercase tracking-[0.3em]">Updated plan</p>
                     <ul className="space-y-1.5">
                       {day.exercises.map((ex, i) => {
                         const status = getExerciseStatus(ex.name);
@@ -159,7 +154,7 @@ export function PlanComparison({ oldPlanText, newPlan }: PlanComparisonProps) {
                           <li
                             key={i}
                             className={`text-sm flex items-center gap-2 ${
-                              status === 'new' ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''
+                              status === 'new' ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-muted-foreground'
                             }`}
                           >
                             {status === 'new' ? (

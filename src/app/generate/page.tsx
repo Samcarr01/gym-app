@@ -133,9 +133,8 @@ export default function GeneratePage() {
             <>
               {!isEditing && qualityReport && <QualityBadge report={qualityReport} onRegenerate={handleRetry} />}
 
-              {/* Show mode toggle buttons when not editing */}
               {!isEditing && (
-                <div className="mb-6 flex items-center justify-center gap-4">
+                <div className="mb-6 flex flex-wrap items-center justify-center gap-4">
                   {existingPlanText && (
                     <>
                       <Button
@@ -222,7 +221,6 @@ function LoadingState({
 }) {
   const [tipIndex, setTipIndex] = useState(0);
 
-  // Rotate tips every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setTipIndex((prev) => (prev + 1) % FITNESS_TIPS.length);
@@ -245,89 +243,88 @@ function LoadingState({
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="relative w-full max-w-2xl">
-        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/20 via-emerald-400/5 to-transparent blur-2xl" />
-        <div className="relative glass-panel p-8 md:p-10 space-y-8">
-          <div className="flex items-center gap-4">
-            <div className="relative h-14 w-14">
-              <div className="absolute inset-0 rounded-full bg-primary/20 blur-md" />
-              <div className="absolute inset-0 rounded-full border border-primary/30" />
-              <div className="absolute inset-1 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            </div>
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                Live generation
+      <div className="relative w-full max-w-3xl">
+        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-primary/20 via-emerald-400/5 to-transparent blur-3xl" />
+        <div className="relative glass-panel p-8 md:p-10 space-y-8 animate-rise">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="relative h-16 w-16">
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: `conic-gradient(hsl(var(--primary)) ${clampedProgress}%, hsl(var(--border)) ${clampedProgress}%)`
+                  }}
+                />
+                <div className="absolute inset-1 rounded-full bg-background/90 flex items-center justify-center text-sm font-semibold">
+                  {Math.round(clampedProgress)}%
+                </div>
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight">Building your plan</h2>
-              <p className="text-sm text-muted-foreground">{statusMessage}</p>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Build pipeline</p>
+                <h2 className="text-2xl font-semibold tracking-tight">Assembling your plan</h2>
+                <p className="text-sm text-muted-foreground">{statusMessage}</p>
+              </div>
+            </div>
+            <div className="soft-card px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              Elapsed {elapsedSeconds}s
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="relative h-2.5 rounded-full bg-secondary overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary/60 via-primary to-emerald-400/70 transition-all duration-700"
-                style={{ width: `${clampedProgress}%` }}
-              />
-              <div className="absolute inset-0 animate-[shine_2.2s_linear_infinite] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)]" />
+          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-4">
+              <div className="relative h-2 rounded-full bg-muted/60 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary/60 via-primary to-emerald-400/70 transition-all duration-700"
+                  style={{ width: `${clampedProgress}%` }}
+                />
+                <div className="absolute inset-0 animate-scan bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)]" />
+              </div>
+              <div className="grid gap-3">
+                {stages.map((stage, index) => {
+                  const isActive = index === stageIndex;
+                  const isDone = index < stageIndex;
+                  return (
+                    <div key={stage.id} className="flex items-center gap-3 text-sm">
+                      <span
+                        className={[
+                          'h-2.5 w-2.5 rounded-full',
+                          isDone ? 'bg-primary' : '',
+                          isActive ? 'bg-primary ring-4 ring-primary/20' : '',
+                          !isDone && !isActive ? 'bg-muted-foreground/40' : ''
+                        ].join(' ')}
+                      />
+                      <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
+                        {stage.label}
+                      </span>
+                      {isActive && (
+                        <span className="text-xs uppercase tracking-[0.2em] text-primary">Live</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{clampedProgress}% complete</span>
-              <span>Elapsed: {elapsedSeconds}s</span>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-3">
-              {stages.map((stage, index) => {
-                const isActive = index === stageIndex;
-                const isDone = index < stageIndex;
-                return (
-                  <div key={stage.id} className="flex items-center gap-3 text-sm">
-                    <span
-                      className={[
-                        'h-2.5 w-2.5 rounded-full',
-                        isDone ? 'bg-primary' : '',
-                        isActive ? 'bg-primary ring-4 ring-primary/20' : '',
-                        !isDone && !isActive ? 'bg-muted-foreground/40' : ''
-                      ].join(' ')}
-                    />
-                    <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
-                      {stage.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground space-y-2">
-              <p className="text-sm text-foreground">What the AI is doing</p>
+            <div className="soft-card p-5 space-y-3 text-sm text-muted-foreground">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Signal analysis</p>
               <p>Applying your goals, targets, and recovery inputs to choose the split and volume.</p>
               <p>Injecting the knowledge base and refining the plan for your constraints.</p>
               <p className="text-primary/80">This stays live until the plan is ready.</p>
             </div>
           </div>
 
-          {/* Rotating fitness tips */}
-          <div className="border-t border-border/50 pt-6 mt-2">
-            <div className="flex items-start gap-3">
-              <div className="shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-primary text-sm">💡</span>
-              </div>
-              <div className="space-y-1 min-h-[3.5rem]">
-                <p className="text-sm font-medium text-foreground transition-opacity duration-300">
-                  {currentTip.tip}
-                </p>
-                <p className="text-xs text-muted-foreground transition-opacity duration-300">
-                  {currentTip.detail}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-1 mt-3 justify-center">
+          <div className="soft-card p-5 space-y-3">
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Coach cue</p>
+            <p className="text-sm font-semibold text-foreground transition-opacity duration-300">
+              {currentTip.tip}
+            </p>
+            <p className="text-xs text-muted-foreground transition-opacity duration-300">
+              {currentTip.detail}
+            </p>
+            <div className="flex gap-1 justify-center">
               {FITNESS_TIPS.map((_, i) => (
                 <span
                   key={i}
-                  className={`h-1 w-1 rounded-full transition-colors ${
+                  className={`h-1 w-2 rounded-full transition-colors ${
                     i === tipIndex ? 'bg-primary' : 'bg-muted-foreground/30'
                   }`}
                 />
@@ -354,9 +351,10 @@ function QualityBadge({
       case 'passed':
         return {
           icon: '✓',
-          label: 'Quality Validated',
+          label: 'Quality validated',
           bgClass: 'bg-emerald-500/10 border-emerald-500/30',
           textClass: 'text-emerald-400',
+          dotClass: 'bg-emerald-400',
           showDetails: false
         };
       case 'passed_with_issues':
@@ -368,14 +366,16 @@ function QualityBadge({
           label: `${issueCount} minor issue${issueCount !== 1 ? 's' : ''} detected`,
           bgClass: 'bg-amber-500/10 border-amber-500/30',
           textClass: 'text-amber-400',
+          dotClass: 'bg-amber-400',
           showDetails: true
         };
       case 'failed_but_returned':
         return {
           icon: '✗',
-          label: 'Quality issues - consider regenerating',
+          label: 'Quality issues detected',
           bgClass: 'bg-red-500/10 border-red-500/30',
           textClass: 'text-red-400',
+          dotClass: 'bg-red-400',
           showDetails: true
         };
     }
@@ -388,14 +388,13 @@ function QualityBadge({
     if (!report.firstAttempt.valid) {
       issues.push(...report.firstAttempt.issues);
     }
-    report.retryAttempts.forEach((attempt, i) => {
+    report.retryAttempts.forEach((attempt) => {
       if (!attempt.valid) {
         attempt.issues.forEach(issue => {
           if (!issues.includes(issue)) issues.push(issue);
         });
       }
     });
-    // Return only the issues from the final attempt
     if (report.retryAttempts.length > 0) {
       return report.retryAttempts[report.retryAttempts.length - 1].issues;
     }
@@ -405,26 +404,30 @@ function QualityBadge({
   const finalIssues = getAllIssues();
 
   return (
-    <div className="mb-6">
-      <div
-        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${config.bgClass} cursor-pointer transition-all hover:opacity-80`}
+    <div className="mb-6 flex flex-col items-center gap-3">
+      <button
+        type="button"
+        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${config.bgClass} transition-all hover:opacity-80`}
         onClick={() => config.showDetails && setExpanded(!expanded)}
+        disabled={!config.showDetails}
       >
-        <span className={`text-lg ${config.textClass}`}>{config.icon}</span>
-        <span className={`text-sm font-medium ${config.textClass}`}>{config.label}</span>
+        <span className={`h-2 w-2 rounded-full ${config.dotClass}`} />
+        <span className={`text-xs uppercase tracking-[0.25em] ${config.textClass}`}>
+          {config.label}
+        </span>
+        <span className="text-xs text-muted-foreground ml-2">
+          ({report.totalAttempts} attempt{report.totalAttempts !== 1 ? 's' : ''})
+        </span>
         {config.showDetails && (
           <span className={`text-xs ${config.textClass} ml-1`}>
             {expanded ? '▼' : '▶'}
           </span>
         )}
-        <span className="text-xs text-muted-foreground ml-2">
-          ({report.totalAttempts} attempt{report.totalAttempts !== 1 ? 's' : ''})
-        </span>
-      </div>
+      </button>
 
       {expanded && finalIssues.length > 0 && (
-        <div className="mt-3 p-4 rounded-lg border border-border/60 bg-muted/30 space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">Issues detected:</p>
+        <div className="w-full max-w-3xl glass-panel p-5 space-y-3 animate-rise">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Issues detected</p>
           <ul className="space-y-1.5">
             {finalIssues.map((issue, i) => (
               <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
@@ -457,7 +460,7 @@ function ErrorState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-      <Card className="p-8 max-w-md text-center space-y-4">
+      <Card className="p-8 max-w-md text-center space-y-4 animate-rise">
         <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
           <span className="text-3xl">😕</span>
         </div>

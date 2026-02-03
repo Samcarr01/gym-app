@@ -36,7 +36,6 @@ export function PlanViewer({ plan }: PlanViewerProps) {
 
     setExporting(true);
     try {
-      // Dynamic import to avoid SSR issues
       const html2pdf = (await import('html2pdf.js')).default;
 
       const element = planRef.current;
@@ -68,17 +67,19 @@ export function PlanViewer({ plan }: PlanViewerProps) {
   };
 
   return (
-    <div ref={planRef} className="space-y-8 print:space-y-4">
-      {/* Header */}
-      <header className="relative overflow-hidden glass-panel p-6 md:p-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+    <div ref={planRef} className="space-y-8 print:space-y-4 animate-fade-in">
+      <header className="relative overflow-hidden glass-panel p-6 md:p-10 animate-rise">
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/15 via-transparent to-emerald-500/10" />
+        <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-6">
             <div className="flex flex-wrap items-center gap-3">
-              <Badge className="border-primary/30 bg-primary/10 text-primary">Plan ready</Badge>
+              <Badge className="border-primary/30 bg-primary/15 text-primary">Plan ready</Badge>
               <Badge variant="outline" className="tracking-normal normal-case">
                 {plan.weeklyStructure}
               </Badge>
+              <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+                Signal quality: High
+              </span>
             </div>
             <div className="space-y-4">
               <h1 className="text-3xl md:text-5xl font-semibold tracking-tight">{plan.planName}</h1>
@@ -86,7 +87,7 @@ export function PlanViewer({ plan }: PlanViewerProps) {
                 {plan.overview}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3 print:hidden">
+            <div className="soft-card p-4 flex flex-wrap gap-3 print:hidden">
               <Button onClick={handleCopy}>
                 {copied ? (
                   <>
@@ -161,8 +162,7 @@ export function PlanViewer({ plan }: PlanViewerProps) {
         </div>
       </header>
 
-      {/* Workout Days */}
-      <div className="space-y-4">
+      <section className="space-y-4 animate-rise">
         <div className="flex flex-wrap items-center gap-3">
           <span className="section-kicker">Workouts</span>
           <h2 className="text-2xl font-semibold">Your training week</h2>
@@ -173,10 +173,9 @@ export function PlanViewer({ plan }: PlanViewerProps) {
         {plan.days.map((day) => (
           <WorkoutDay key={day.dayNumber} day={day} />
         ))}
-      </div>
+      </section>
 
-      {/* Additional Notes */}
-      <div className="grid gap-6 md:grid-cols-3 print:grid-cols-3">
+      <section className="grid gap-6 md:grid-cols-3 print:grid-cols-3 animate-rise">
         <Card className="p-5 hover:border-primary/40 transition-colors">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -210,11 +209,10 @@ export function PlanViewer({ plan }: PlanViewerProps) {
             {plan.recoveryNotes}
           </p>
         </Card>
-      </div>
+      </section>
 
-      {/* Disclaimer */}
-      <footer className="pt-6 border-t">
-        <div className="flex items-center justify-center gap-2 p-4 bg-amber-500/5 rounded-lg">
+      <footer className="pt-6 border-t border-border/60">
+        <div className="soft-card p-4 flex items-center justify-center gap-2">
           <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
           <p className="text-xs text-muted-foreground text-center">
             {plan.disclaimer}

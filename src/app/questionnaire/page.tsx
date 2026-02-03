@@ -16,46 +16,60 @@ function QuestionnaireContent() {
       <div className="page-container flex-1 py-12 md:py-16">
         <div className="max-w-5xl mx-auto space-y-8">
           <header className="space-y-4">
-            <span className="section-kicker">Questionnaire</span>
+            <span className="section-kicker">Mission intake</span>
             <h1 className="text-3xl md:text-5xl font-semibold tracking-tight">
-              Tell the AI about your training world.
+              Give the AI your training signals.
             </h1>
             <p className="text-muted-foreground text-lg max-w-3xl">
-              The more detail you share, the more specific the plan becomes. We&apos;ll use your goals,
-              recovery, equipment, and preferences to build something worth doing.
+              Answer a focused set of questions so the plan matches your goals, recovery, equipment, and preferences.
             </p>
           </header>
 
-          {/* Mobile info banner - shows on small screens only */}
-          <div className="lg:hidden flex flex-wrap gap-3 text-sm">
-            <div className="flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-4 py-2">
-              <span className="text-muted-foreground">Time:</span>
-              <span className="font-medium">~3 min</span>
+          <div className="lg:hidden grid gap-3 text-sm">
+            <div className="soft-card p-4 flex items-center justify-between">
+              <span className="text-muted-foreground">Time to finish</span>
+              <span className="font-semibold">~3 min</span>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-4 py-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-muted-foreground">Auto-saves progress</span>
+            <div className="soft-card p-4 flex items-center justify-between">
+              <span className="text-muted-foreground">Status</span>
+              <span className="text-primary font-semibold">Auto-save on</span>
             </div>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-start">
             <QuestionnaireForm mode={mode} />
-            {/* Sidebar - hidden on mobile, visible on large screens */}
+
             <aside className="hidden lg:block space-y-6">
+              <div className="glass-panel p-6 space-y-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Mission console</p>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>Signal quality</span>
+                    <span className="text-primary font-semibold">High</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Estimated time</span>
+                    <span className="font-semibold text-foreground">~3 minutes</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Auto-save</span>
+                    <span className="font-semibold text-foreground">Enabled</span>
+                  </div>
+                </div>
+              </div>
               <div className="soft-card p-6 space-y-4">
                 <h2 className="font-display text-lg font-semibold">What gets personalised</h2>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Training split + weekly structure</li>
+                  <li>• Split + weekly structure</li>
                   <li>• Exercise selection (favourites + weak points)</li>
                   <li>• Volume, intensity, and progression model</li>
-                  <li>• Recovery &amp; nutrition guidance that matches your lifestyle</li>
+                  <li>• Recovery and nutrition guidance</li>
                 </ul>
               </div>
-              <div className="glass-panel p-6 space-y-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Time to complete</p>
-                <p className="text-2xl font-semibold">~3 minutes</p>
+              <div className="soft-card p-6 space-y-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Tip</p>
                 <p className="text-sm text-muted-foreground">
-                  We&apos;ll save your progress automatically while you move through the steps.
+                  Be honest about recovery and time. The plan will be better and easier to follow.
                 </p>
               </div>
             </aside>
