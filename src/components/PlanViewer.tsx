@@ -77,7 +77,7 @@ export function PlanViewer({ plan }: PlanViewerProps) {
               <Badge variant="outline" className="tracking-normal normal-case">
                 {plan.weeklyStructure}
               </Badge>
-              <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+              <span className="hidden sm:inline text-xs uppercase tracking-[0.25em] text-muted-foreground">
                 Signal quality: High
               </span>
             </div>
@@ -88,7 +88,7 @@ export function PlanViewer({ plan }: PlanViewerProps) {
               </p>
             </div>
             <div className="soft-card p-4 flex flex-wrap gap-3 print:hidden">
-              <Button onClick={handleCopy}>
+              <Button onClick={handleCopy} className="w-full sm:w-auto">
                 {copied ? (
                   <>
                     <Check className="h-4 w-4 mr-2" />
@@ -101,11 +101,11 @@ export function PlanViewer({ plan }: PlanViewerProps) {
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={handlePrint}>
+              <Button variant="outline" onClick={handlePrint} className="w-full sm:w-auto">
                 <Printer className="h-4 w-4 mr-2" />
                 Print
               </Button>
-              <Button variant="outline" onClick={handleExportPDF} disabled={exporting}>
+              <Button variant="outline" onClick={handleExportPDF} disabled={exporting} className="w-full sm:w-auto">
                 {exporting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -118,7 +118,7 @@ export function PlanViewer({ plan }: PlanViewerProps) {
                   </>
                 )}
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild className="w-full sm:w-auto">
                 <Link href="/">
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Start Over

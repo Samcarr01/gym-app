@@ -248,7 +248,7 @@ function LoadingState({
         <div className="relative glass-panel p-8 md:p-10 space-y-8 animate-rise">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="relative h-16 w-16">
+              <div className="relative h-14 w-14 sm:h-16 sm:w-16">
                 <div
                   className="absolute inset-0 rounded-full"
                   style={{
@@ -265,7 +265,7 @@ function LoadingState({
                 <p className="text-sm text-muted-foreground">{statusMessage}</p>
               </div>
             </div>
-            <div className="soft-card px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+            <div className="soft-card px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground w-full sm:w-auto text-center">
               Elapsed {elapsedSeconds}s
             </div>
           </div>

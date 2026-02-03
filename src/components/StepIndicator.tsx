@@ -27,9 +27,9 @@ export function StepIndicator({
 
   return (
     <div className="mb-8 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="relative h-14 w-14">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative h-12 w-12 sm:h-14 sm:w-14">
             <div
               className="absolute inset-0 rounded-full"
               style={{
@@ -48,7 +48,7 @@ export function StepIndicator({
             )}
           </div>
         </div>
-        <div className="soft-card px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+        <div className="soft-card px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground w-full sm:w-auto text-center">
           Auto-save on
         </div>
       </div>
